@@ -22,7 +22,6 @@ const glm::vec3 computeSpecular(const glm::vec3& lightPosition, const glm::vec3&
     } else {
         glm::vec3 lightRay = glm::normalize(position - lightPosition); // From light to point
 
-        // glm::vec3 reflection = glm::normalize(lightRay - 2 * glm::dot(lightRay, normal) * normal); // from point to infinity
         glm::vec3 reflection = glm::normalize(lightRay - 2 * glm::dot(hitInfo.normal, lightRay) * hitInfo.normal); // from point to infinity
         glm::vec3 viewDirection = glm::normalize(ray.origin - position); // from point to camera
 
@@ -46,8 +45,7 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
         glm::vec3 specular = computeSpecular(lightPosition, lightColor, features, ray, hitInfo);
 
         glm::vec3 shading = diffuse + specular;
-
-        printf("%f %f %f\n", hitInfo.normal.x, hitInfo.normal.y, hitInfo.normal.z);
+        
         return shading;
     } else {
         return hitInfo.material.kd;

@@ -77,20 +77,15 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
         for (const auto& light : scene.lights) {
             if (std::holds_alternative<PointLight>(light)) {
                 const PointLight pointLight = std::get<PointLight>(light);
-                // Perform your calculations for a point light.
 
                 result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
 
             } else if (std::holds_alternative<SegmentLight>(light)) {
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
-                //result += computeShading(segmentLight.)
-
                 // Perform your calculations for a segment light.
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
-
-                //result += computeShading()
 
                 // Perform your calculations for a parallelogram light.
             }
