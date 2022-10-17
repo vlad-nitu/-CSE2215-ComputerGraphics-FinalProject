@@ -7,6 +7,15 @@
 // Forward declaration.
 struct Scene;
 
+struct Node {
+    bool isLeaf; // false for interior node and true for leafs
+
+    glm::vec3 upper; // Vector representing the upper values for each axis
+    glm::vec3 lower; // Vector representing the lower values for each axis
+    
+    std::vector<int> children; // If node is interior contains indices of children nodes, else contains indices of triangles
+};
+
 class BoundingVolumeHierarchy {
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
