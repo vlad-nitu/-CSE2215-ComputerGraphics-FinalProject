@@ -60,4 +60,5 @@ private:
     int m_numLevels;
     int m_numLeaves;
     Scene* m_pScene;
+    std::vector<Node> nodes;
 };
