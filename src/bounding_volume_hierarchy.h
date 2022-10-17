@@ -8,12 +8,29 @@
 struct Scene;
 
 struct Node {
-    bool isLeaf; // false for interior node and true for leafs
+    bool isLeaf; // false for interior node and true for leafs.
 
-    glm::vec3 upper; // Vector representing the upper values for each axis
-    glm::vec3 lower; // Vector representing the lower values for each axis
+    glm::vec3 upper; // vec3 representing the upper values for each axis.
+    glm::vec3 lower; // vec3 representing the lower values for each axis.
     
-    std::vector<int> children; // If node is interior contains indices of children nodes, else contains indices of triangles
+    /*
+    * Contains the indices of this node's children in their respective vector.
+    * 
+    * There are two cases:
+    * 
+    * Case 1: Node is an interior node
+    * The values represent the indices of the children in the vector containing 
+    * all of the nodes.
+    * 
+    * Case 2: Node is a leaf
+    * Because primitives are divided among meshes and spheres we represent them 
+    * as if contained in a single continuous vector. 
+    * To get the mesh and position
+    * of a primitive we substract mesh sizes one by one untill the curent mesh size
+    * is bigger than the remaining index of the primitive.
+    * After substractiv all the meshes we consider that the primitive is a sphere
+    */
+    std::vector<int> children; 
 };
 
 class BoundingVolumeHierarchy {
