@@ -10,8 +10,24 @@ struct Scene;
 struct Node {
     bool isLeaf; // false for interior node and true for leafs.
 
-    glm::vec3 upper; // vec3 representing the upper values for each axis.
     glm::vec3 lower; // vec3 representing the lower values for each axis.
+    glm::vec3 upper; // vec3 representing the upper values for each axis.
+
+    // Default constructor
+    Node() {}
+
+    // Basic constructor
+    Node(bool leaf)
+    {
+        isLeaf = leaf;
+    }
+
+    // Full constructor
+    Node(bool leaf, glm::vec3 low, glm::vec3 high) {
+        isLeaf = leaf;
+        lower = low;
+        upper = high;
+    }
     
     /*
     * Contains the indices of this node's children in their respective vector.

@@ -7,10 +7,66 @@
 #include <glm/glm.hpp>
 
 
+void subdivideNode(Node node, std::vector<glm::vec3> centroids)
+{
+
+}
+
 BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
     : m_pScene(pScene)
 {
-    // TODO: implement BVH construction.
+    /*
+    * Create a list containing the centers of all the triangles and spheres
+    * 
+    * Follows the same ordering as for the flattened list of triangles used in the node struct
+    */
+    std::vector<glm::vec3> centroids;
+
+    glm::vec3 low = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 high = glm::vec3 { std::numeric_limits<float>::min() };
+
+    /*
+     * PLS pay attention to this
+     */
+    Node root = Node(false); // No idea if I need to use the 'new' keyword or not
+    /*
+     * May need to add all the vertices to the children list of the node
+     * and remove them once it is subdivided. Do this recursivelly
+     */
+
+    for (const auto& mesh : m_pScene->meshes) {
+        for (const auto& tri : mesh.triangles) {
+            const auto v0 = mesh.vertices[tri[0]].position;
+            const auto v1 = mesh.vertices[tri[1]].position;
+            const auto v2 = mesh.vertices[tri[2]].position;
+
+            glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 {3};
+            centroids.push_back(centre);
+
+            // Calculate the bounds of the root node
+            low = glm::min(v0, low);
+            high = glm::max(v0, high);
+
+            low = glm::min(v1, low);
+            high = glm::max(v1, high);
+
+            low = glm::min(v2, low);
+            high = glm::max(v2, high);
+        }
+    }
+
+    for (const auto& sphere : m_pScene->spheres) {
+        centroids.push_back(sphere.center);
+    }
+
+    // Define the boundaries of the root bounding volume
+    root.lower = low;
+    root.upper = high;
+
+    // Add the root node to the node list
+    nodes.push_back(root);
+
+    subdivideNode(root, centroids);
 }
 
 // Return the depth of the tree that you constructed. This is used to tell the
