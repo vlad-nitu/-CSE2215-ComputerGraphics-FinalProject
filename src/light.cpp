@@ -78,16 +78,28 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             if (std::holds_alternative<PointLight>(light)) {
                 const PointLight pointLight = std::get<PointLight>(light);
 
-                result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
+                if (testVisibilityLightSample(pointLight.position, glm::vec3{1, 0, 0}, bvh, features, ray, hitInfo))
+                    result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
 
             } else if (std::holds_alternative<SegmentLight>(light)) {
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
-                // Perform your calculations for a segment light.
+                glm::vec3 position = glm::vec3 { 0 };
+                glm::vec3 color = glm::vec3 { 0 };
+
+                sampleSegmentLight(segmentLight, position, color);
+
+                result += computeShading(position, color, features, ray, hitInfo);
+                
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
-                // Perform your calculations for a parallelogram light.
+                glm::vec3 position = glm::vec3 { 0 };
+                glm::vec3 color = glm::vec3 { 0 };
+
+                sampleParallelogramLight(parallelogramLight, position, color);
+
+                result += computeShading(position, color, features, ray, hitInfo);
             }
         }
         //return hitInfo.material.kd;
