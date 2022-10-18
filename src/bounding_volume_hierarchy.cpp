@@ -69,9 +69,11 @@ void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> ce
     } else {
         // We further need to subdivide
         node.isLeaf = false;
+        m_numLeaves--;
 
-        Node leftChild = Node(false);
-        Node rightChild = Node(false);
+        Node leftChild = Node(true);
+        Node rightChild = Node(true);
+        m_numLeaves += 2;
 
         // Sort method taken from https://en.cppreference.com/w/cpp/algorithm/sort
         /*
