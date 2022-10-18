@@ -9,12 +9,27 @@
 
 void subdivideNode(Node node, std::vector<glm::vec3> centroids)
 {
+    if (node.children.size() == 1) {
+        // Node contains only one primitive so it needs to remain a leaf node
+        return;
+    } else {
+        // We further need to subdivide
+        node.isLeaf = false;
 
+        Node leftChild = Node(false);
+        Node rightChild = Node(false);
+
+        // TODO: Find where to split
+
+    }
 }
 
 BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
     : m_pScene(pScene)
 {
+    m_numLeaves = 1;
+    m_numLevels = 1;
+
     /*
     * Create a list containing the centers of all the triangles and spheres
     * 
@@ -28,12 +43,9 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
     /*
      * PLS pay attention to this
      */
-    Node root = Node(false); // No idea if I need to use the 'new' keyword or not
-    /*
-     * May need to add all the vertices to the children list of the node
-     * and remove them once it is subdivided. Do this recursivelly
-     */
+    Node root = Node(true); // No idea if I need to use the 'new' keyword or not
 
+    int primitiveIndex = 0;
     for (const auto& mesh : m_pScene->meshes) {
         for (const auto& tri : mesh.triangles) {
             const auto v0 = mesh.vertices[tri[0]].position;
@@ -52,11 +64,17 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
 
             low = glm::min(v2, low);
             high = glm::max(v2, high);
+
+            // Add all the primitives inside of the node
+            root.children.push_back(primitiveIndex++);
         }
     }
 
     for (const auto& sphere : m_pScene->spheres) {
         centroids.push_back(sphere.center);
+
+        // Add the sphere primitives inside the node
+        root.children.push_back(primitiveIndex++);
     }
 
     // Define the boundaries of the root bounding volume
