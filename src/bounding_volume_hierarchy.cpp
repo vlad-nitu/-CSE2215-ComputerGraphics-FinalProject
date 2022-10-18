@@ -78,6 +78,16 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 const auto v1 = mesh.vertices[tri[1]];
                 const auto v2 = mesh.vertices[tri[2]];
                 if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
+                    hitInfo.barycentricCoord = computeBarycentricCoord(v0.position, v1.position, v2.position, ray.origin + ray.t * ray.direction);
+
+                    if (features.enableNormalInterp) {
+                        hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord);
+                    } else {
+                        glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
+
+                        hitInfo.normal = (glm::dot(ray.direction, normal) > 0) ? -normal : normal;
+                    }
+
                     hitInfo.material = mesh.material;
                     hit = true;
                 }
