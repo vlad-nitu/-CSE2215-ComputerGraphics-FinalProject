@@ -59,9 +59,19 @@ void BoundingVolumeHierarchy::computeAABB(Node node)
     node.upper = high;
 }
 
-void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> centroids, int axis)
+/// <summary>
+/// Computes the AABB for a given node and decides to split it if the node has more than one primitive inside
+/// </summary>
+/// <param name="node"> The node that is curently being subdivided. </param>
+/// <param name="centroids"> The list containing the centroids for all the primitives. </param>
+/// <param name="axis"> The axis on which the node will be split. 0 for x, 1 for y, 2 for z. </param>
+/// <param name="depth"> The depth of the given node. </param>
+void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> centroids, int axis, int depth)
 {
     computeAABB(node);
+
+    // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
+    m_numLevels = std::max(m_numLevels, depth + 1);
 
     if (node.children.size() == 1) {
         // Node contains only one primitive so it needs to remain a leaf node
@@ -69,11 +79,11 @@ void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> ce
     } else {
         // We further need to subdivide
         node.isLeaf = false;
-        m_numLeaves--;
+        m_numLeaves--; // Current node is no longer a leaf
 
         Node leftChild = Node(true);
         Node rightChild = Node(true);
-        m_numLeaves += 2;
+        m_numLeaves += 2; // Children are by default leafs
 
         // Sort method taken from https://en.cppreference.com/w/cpp/algorithm/sort
         /*
@@ -88,14 +98,14 @@ void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> ce
                 return centroids[a].z < centroids[b].z;
         });
 
-        // Move the primitives to the children
+        // Move the primitives to the children based on the centroids
         for (int i = 0; i < node.children.size(); i++) {
             if (i <= node.children.size() / 2)
                 leftChild.children.push_back(node.children[i]);
             else
                 rightChild.children.push_back(node.children[i]);
         }
-        node.children.clear();
+        node.children.clear(); // remove the children index from the parent
 
         nodes.push_back(leftChild); // Insert the child into the hierarchy
         node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
@@ -103,9 +113,9 @@ void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> ce
         nodes.push_back(rightChild); // Insert the child into the hierarchy
         node.children.push_back(nodes.size() - 1); // remember the index of the right child for the parent
 
-        // Further subdivide the nodes.
-        subdivideNode(leftChild, centroids, (axis + 1) % 3);
-        subdivideNode(rightChild, centroids, (axis + 1) % 3);
+        // Further subdivide the nodes with the new axis and depth.
+        subdivideNode(leftChild, centroids, (axis + 1) % 3, depth + 1);
+        subdivideNode(rightChild, centroids, (axis + 1) % 3, depth + 1);
     }
 }
 
@@ -152,7 +162,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
     // Add the root node to the node list
     nodes.push_back(root);
 
-    subdivideNode(root, centroids, 0);
+    subdivideNode(root, centroids, 0, 0);
 }
 
 // Return the depth of the tree that you constructed. This is used to tell the

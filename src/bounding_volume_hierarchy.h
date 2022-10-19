@@ -23,7 +23,8 @@ struct Node {
     }
 
     // Full constructor
-    Node(bool leaf, glm::vec3 low, glm::vec3 high) {
+    Node(bool leaf, glm::vec3 low, glm::vec3 high)
+    {
         isLeaf = leaf;
         lower = low;
         upper = high;
