@@ -107,6 +107,8 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
     } else {
         // If shading is disabled, return the albedo of the material.
+
+        // Ask if when shading is false but texturing is on you return texture or albedo??????????????????
         return hitInfo.material.kd;
     }
 }

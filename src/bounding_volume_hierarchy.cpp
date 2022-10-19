@@ -71,6 +71,19 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
     // If BVH is not enabled, use the naive implementation.
     if (!features.enableAccelStructure) {
         bool hit = false;
+
+        Vertex bestV0 = m_pScene->meshes[0].vertices[0];
+        Vertex bestV1 = m_pScene->meshes[0].vertices[0];
+        Vertex bestV2 = m_pScene->meshes[0].vertices[0];
+        float bestTriangleT = std::numeric_limits<float>::max();
+        
+        Sphere bestSphere;
+        if (m_pScene->spheres.size() > 0)
+            bestSphere = m_pScene->spheres[0];
+        else
+            bestSphere = Sphere();
+        float bestSphereT = std::numeric_limits<float>::max();
+
         // Intersect with all triangles of all meshes.
         for (const auto& mesh : m_pScene->meshes) {
             for (const auto& tri : mesh.triangles) {
@@ -79,22 +92,19 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 const auto v2 = mesh.vertices[tri[2]];
 
                 if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
-                    glm::vec3 p = ray.origin + ray.t * ray.direction;
 
-                    hitInfo.barycentricCoord = computeBarycentricCoord(v0.position, v1.position, v2.position, p);
+                    if (ray.t < bestSphereT) {
+                        bestTriangleT = ray.t;
+                        bestV0 = v0;
+                        bestV1 = v1;
+                        bestV2 = v2;
+                    }
+
+                    hitInfo.barycentricCoord = computeBarycentricCoord(v0.position, v1.position, v2.position, ray.origin + ray.t * ray.direction);
 
                     // Check if normal interpolation is turned on
                     if (features.enableNormalInterp) {
                         hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord); // Interpolate normal
-
-                        // Draw debug rays for interpolated normal
-                        {
-                            drawRay(Ray(v0.position, v0.normal, 0.5f), glm::vec3 { 0, 0, 1 });
-                            drawRay(Ray(v1.position, v1.normal, 0.5f), glm::vec3 { 0, 0, 1 });
-                            drawRay(Ray(v2.position, v2.normal, 0.5f), glm::vec3 { 0, 0, 1 });
-
-                            drawRay(Ray(p, hitInfo.normal, 0.5f), glm::vec3 { 0, 1, 0 });
-                        }
 
                         // Check if textures are turned on
                         if (features.enableTextureMapping) {
@@ -112,9 +122,32 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 }
             }
         }
+
         // Intersect with spheres.
-        for (const auto& sphere : m_pScene->spheres)
+        for (const auto& sphere : m_pScene->spheres) {
             hit |= intersectRayWithShape(sphere, ray, hitInfo);
+
+            if (ray.t < bestSphereT) {
+                bestSphereT = ray.t;
+                bestSphere = sphere;
+            }
+        }
+
+        // Draw debug for normal interpolation for the best primitive intersection
+        if (features.enableNormalInterp) {
+            if (bestTriangleT < bestSphereT) {
+                drawRay(Ray(bestV0.position, bestV0.normal, 0.5f), glm::vec3 { 0, 0, 1 });
+                drawRay(Ray(bestV1.position, bestV1.normal, 0.5f), glm::vec3 { 0, 0, 1 });
+                drawRay(Ray(bestV2.position, bestV2.normal, 0.5f), glm::vec3 { 0, 0, 1 });
+
+                drawRay(Ray(ray.origin + ray.t * ray.direction, hitInfo.normal, 0.5f), glm::vec3 { 0, 1, 0 });
+            } else {
+                glm::vec3 p = ray.origin + ray.t * ray.direction;
+
+                drawRay(Ray(p, p - bestSphere.center, 0.5f), glm::vec3 { 0, 1, 0 });
+            }
+        }
+
         return hit;
     } else {
         // TODO: implement here the bounding volume hierarchy traversal.

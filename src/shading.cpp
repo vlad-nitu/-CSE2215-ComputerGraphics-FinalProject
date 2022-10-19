@@ -11,9 +11,9 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
     if (features.enableTextureMapping && hitInfo.material.kdTexture) {
-        //glm::vec3 kd = acquireTexel(hitInfo.material.kdTexture, hitInfo.texCoord, features);
+        glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
 
-        //return lightColor * kd * dotProduct;
+        return lightColor * kd * dotProduct;
     } else {
         return lightColor * hitInfo.material.kd * dotProduct;
     }
