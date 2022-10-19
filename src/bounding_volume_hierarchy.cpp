@@ -108,15 +108,14 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3> c
         }
         node.children.clear(); // remove the children index from the parent
 
-        node.children.push_back(nodes.size()); // Remember the index of the left child for the parent
-        node.children.push_back(nodes.size() + 1); // remember the index of the right child for the parent
-
+        subdivideNode(leftChild, centroids, (axis + 1) % 3, depth + 1);
+        node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
+        
+        subdivideNode(rightChild, centroids, (axis + 1) % 3, depth + 1);
+        node.children.push_back(nodes.size() - 1); // remember the index of the right child for the parent
+        
         // Add the node to the hierarchy
         nodes.push_back(node);
-        
-        // Further subdivide the nodes with the new axis and depth.
-        subdivideNode(leftChild, centroids, (axis + 1) % 3, depth + 1);
-        subdivideNode(rightChild, centroids, (axis + 1) % 3, depth + 1);
     }
 }
 
@@ -206,7 +205,7 @@ void BoundingVolumeHierarchy::debugDrawLevel(int level)
     //drawAABB(aabb, DrawMode::Wireframe);
     //drawAABB(aabb, DrawMode::Filled, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
     std::vector<AxisAlignedBox> toDraw;
-    showLevel(nodes[0], 0, level, toDraw);
+    showLevel(nodes[nodes.size() - 1], 0, level, toDraw);
 
     for (const auto& aabb : toDraw) {
         drawAABB(aabb, DrawMode::Wireframe, glm::vec3(1), 0.4f);
