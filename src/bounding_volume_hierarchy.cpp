@@ -9,10 +9,10 @@
 /*
 * Given a node, computer the bounding volume
 */
-void BoundingVolumeHierarchy::computeAABB(Node node)
+void BoundingVolumeHierarchy::computeAABB(Node& node)
 {
     glm::vec3 low = glm::vec3 { std::numeric_limits<float>::max() };
-    glm::vec3 high = glm::vec3 { std::numeric_limits<float>::min() };
+    glm::vec3 high = glm::vec3 { -std::numeric_limits<float>::max() };
 
     for (int i = 0; i< node.children.size(); i++) {
         int primitiveIndex = node.children[i];
@@ -66,7 +66,7 @@ void BoundingVolumeHierarchy::computeAABB(Node node)
 /// <param name="centroids"> The list containing the centroids for all the primitives. </param>
 /// <param name="axis"> The axis on which the node will be split. 0 for x, 1 for y, 2 for z. </param>
 /// <param name="depth"> The depth of the given node. </param>
-void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> centroids, int axis, int depth)
+void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3> centroids, int axis, int depth)
 {
     computeAABB(node);
 
@@ -74,7 +74,8 @@ void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> ce
     m_numLevels = std::max(m_numLevels, depth + 1);
 
     if (node.children.size() == 1) {
-        // Node contains only one primitive so it needs to remain a leaf node
+        nodes.push_back(node); // Add the node to the hierarchy
+
         return;
     } else {
         // We further need to subdivide
@@ -107,12 +108,12 @@ void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> ce
         }
         node.children.clear(); // remove the children index from the parent
 
-        nodes.push_back(leftChild); // Insert the child into the hierarchy
-        node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
+        node.children.push_back(nodes.size()); // Remember the index of the left child for the parent
+        node.children.push_back(nodes.size() + 1); // remember the index of the right child for the parent
 
-        nodes.push_back(rightChild); // Insert the child into the hierarchy
-        node.children.push_back(nodes.size() - 1); // remember the index of the right child for the parent
-
+        // Add the node to the hierarchy
+        nodes.push_back(node);
+        
         // Further subdivide the nodes with the new axis and depth.
         subdivideNode(leftChild, centroids, (axis + 1) % 3, depth + 1);
         subdivideNode(rightChild, centroids, (axis + 1) % 3, depth + 1);
@@ -159,9 +160,6 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
         root.children.push_back(primitiveIndex++);
     }
 
-    // Add the root node to the node list
-    nodes.push_back(root);
-
     subdivideNode(root, centroids, 0, 0);
 }
 
@@ -179,6 +177,20 @@ int BoundingVolumeHierarchy::numLeaves() const
     return m_numLeaves;
 }
 
+void BoundingVolumeHierarchy::showLevel(Node node, int currentLevel, int targetLevel, std::vector <AxisAlignedBox>& toDraw)
+{
+    if (currentLevel == targetLevel) {
+        AxisAlignedBox aabb {node.lower, node.upper};
+
+        toDraw.push_back(aabb);
+    } else {
+        if (!node.isLeaf) {
+            showLevel(nodes[node.children[0]], currentLevel + 1, targetLevel, toDraw);
+            showLevel(nodes[node.children[1]], currentLevel + 1, targetLevel, toDraw);
+        }
+    }
+}
+
 // Use this function to visualize your BVH. This is useful for debugging. Use the functions in
 // draw.h to draw the various shapes. We have extended the AABB draw functions to support wireframe
 // mode, arbitrary colors and transparency.
@@ -190,9 +202,15 @@ void BoundingVolumeHierarchy::debugDrawLevel(int level)
 
     // Draw the AABB as a (white) wireframe box.
 
-    AxisAlignedBox aabb { glm::vec3(0.0f), glm::vec3(0.0f, 1.05f, 1.05f) };
+    //AxisAlignedBox aabb { glm::vec3(0.0f), glm::vec3(0.0f, 1.05f, 1.05f) };
     //drawAABB(aabb, DrawMode::Wireframe);
-    drawAABB(aabb, DrawMode::Filled, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+    //drawAABB(aabb, DrawMode::Filled, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+    std::vector<AxisAlignedBox> toDraw;
+    showLevel(nodes[0], 0, level, toDraw);
+
+    for (const auto& aabb : toDraw) {
+        drawAABB(aabb, DrawMode::Wireframe, glm::vec3(1), 0.4f);
+    }
 }
 
 

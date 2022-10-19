@@ -52,9 +52,11 @@ struct Node {
 
 class BoundingVolumeHierarchy {
 private:
-    void computeAABB(Node node);
+    void computeAABB(Node& node);
 
-    void subdivideNode(Node node, std::vector<glm::vec3> centroids, int axis, int depth);
+    void subdivideNode(Node& node, std::vector<glm::vec3> centroids, int axis, int depth);
+
+    void showLevel(Node node, int currentLevel, int targetLevel, std::vector<AxisAlignedBox>& toDraw);
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
