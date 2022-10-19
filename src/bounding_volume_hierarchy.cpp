@@ -77,11 +77,30 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 const auto v0 = mesh.vertices[tri[0]];
                 const auto v1 = mesh.vertices[tri[1]];
                 const auto v2 = mesh.vertices[tri[2]];
-                if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
-                    hitInfo.barycentricCoord = computeBarycentricCoord(v0.position, v1.position, v2.position, ray.origin + ray.t * ray.direction);
 
+                if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
+                    glm::vec3 p = ray.origin + ray.t * ray.direction;
+
+                    hitInfo.barycentricCoord = computeBarycentricCoord(v0.position, v1.position, v2.position, p);
+
+                    // Check if normal interpolation is turned on
                     if (features.enableNormalInterp) {
-                        hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord);
+                        hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord); // Interpolate normal
+
+                        // Draw debug rays for interpolated normal
+                        {
+                            drawRay(Ray(v0.position, v0.normal, 0.5f), glm::vec3 { 0, 0, 1 });
+                            drawRay(Ray(v1.position, v1.normal, 0.5f), glm::vec3 { 0, 0, 1 });
+                            drawRay(Ray(v2.position, v2.normal, 0.5f), glm::vec3 { 0, 0, 1 });
+
+                            drawRay(Ray(p, hitInfo.normal, 0.5f), glm::vec3 { 0, 1, 0 });
+                        }
+
+                        // Check if textures are turned on
+                        if (features.enableTextureMapping) {
+                            hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
+                        }
+
                     } else {
                         glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
