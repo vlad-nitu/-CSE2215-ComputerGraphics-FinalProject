@@ -54,7 +54,7 @@ class BoundingVolumeHierarchy {
 private:
     void computeAABB(Node node);
 
-    void subdivideNode(Node node, std::vector<glm::vec3> centroids, int axis);
+    void subdivideNode(Node node, std::vector<glm::vec3> centroids, int axis, int depth);
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.

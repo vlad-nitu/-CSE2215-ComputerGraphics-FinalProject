@@ -100,7 +100,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node node, std::vector<glm::vec3> ce
 
         // Move the primitives to the children based on the centroids
         for (int i = 0; i < node.children.size(); i++) {
-            if (i <= node.children.size() / 2)
+            if (i < node.children.size() / 2)
                 leftChild.children.push_back(node.children[i]);
             else
                 rightChild.children.push_back(node.children[i]);
