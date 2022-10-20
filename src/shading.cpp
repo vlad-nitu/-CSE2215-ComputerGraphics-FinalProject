@@ -54,7 +54,11 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
         
         return shading;
     } else {
-        return hitInfo.material.kd;
+        if (features.enableTextureMapping) {
+            return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
+        } else {
+            return hitInfo.material.kd;
+        }
     }
 }
 
