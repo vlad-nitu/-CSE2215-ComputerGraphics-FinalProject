@@ -136,15 +136,15 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         // Draw debug for normal interpolation for the best primitive intersection
         if (features.enableNormalInterp) {
             if (bestTriangleT < bestSphereT) {
-                drawRay(Ray(bestV0.position, bestV0.normal, 0.5f), glm::vec3 { 0, 0, 1 });
-                drawRay(Ray(bestV1.position, bestV1.normal, 0.5f), glm::vec3 { 0, 0, 1 });
-                drawRay(Ray(bestV2.position, bestV2.normal, 0.5f), glm::vec3 { 0, 0, 1 });
+                drawRay({bestV0.position, bestV0.normal, 0.5f}, glm::vec3 { 0, 0, 1 });
+                drawRay({bestV1.position, bestV1.normal, 0.5f}, glm::vec3 { 0, 0, 1 });
+                drawRay({bestV2.position, bestV2.normal, 0.5f}, glm::vec3 { 0, 0, 1 });
 
-                drawRay(Ray(ray.origin + ray.t * ray.direction, hitInfo.normal, 0.5f), glm::vec3 { 0, 1, 0 });
+                drawRay({ray.origin + ray.t * ray.direction, hitInfo.normal, 0.5f}, glm::vec3 { 0, 1, 0 });
             } else {
                 glm::vec3 p = ray.origin + ray.t * ray.direction;
 
-                drawRay(Ray(p, p - bestSphere.center, 0.5f), glm::vec3 { 0, 1, 0 });
+                drawRay({p, p - bestSphere.center, 0.5f}, glm::vec3 { 0, 1, 0 });
             }
         }
 
