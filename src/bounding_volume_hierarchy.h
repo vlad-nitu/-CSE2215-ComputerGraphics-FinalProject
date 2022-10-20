@@ -56,7 +56,7 @@ private:
 
     void subdivideNode(Node& node, std::vector<glm::vec3> centroids, int axis, int depth);
 
-    void showLevel(Node& node, int currentLevel, int targetLevel, std::vector<AxisAlignedBox>& toDraw);
+    void showLevel(Node& node, int currentLevel, int targetLevel);
 
     void getLeaf(int index, int& leafIdx, int& result);
 
@@ -75,6 +75,8 @@ public:
 
     // Visual Debug 2: Draw the triangles of the i-th leaf
     void debugDrawLeaf(int leafIdx);
+
+    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features) const;
 
     // Return true if something is hit, returns false otherwise.
     // Only find hits if they are closer than t stored in the ray and the intersection
