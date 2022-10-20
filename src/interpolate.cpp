@@ -1,6 +1,7 @@
 #include "interpolate.h"
 #include <glm/geometric.hpp>
 
+// Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 2, Section 2.7, pp. 48-49
 glm::vec3 computeBarycentricCoord (const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& p)
 {
     glm::vec3 normal_largeTriangle = glm::cross((v1 - v0), (v2 - v0));
