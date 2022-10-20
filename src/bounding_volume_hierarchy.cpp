@@ -73,7 +73,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3> c
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
 
-    if (node.children.size() == 1) {
+    if (node.children.size() <= 5) {
         nodes.push_back(node); // Add the node to the hierarchy
 
         return;
@@ -100,12 +100,22 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3> c
         });
 
         // Move the primitives to the children based on the centroids
-        for (int i = 0; i < node.children.size(); i++) {
-            if (i < node.children.size() / 2)
-                leftChild.children.push_back(node.children[i]);
-            else
-                rightChild.children.push_back(node.children[i]);
-        }
+            for (int i = 0; i < node.children.size(); i++) {
+
+                if (i < node.children.size() / 2) {
+                    leftChild.children.push_back(node.children[i]);
+                } else {
+                    /*if (axis == 0 && centroids[node.children[i]].x == centroids[node.children[node.children.size() / 2 - 1]].x) {
+                        leftChild.children.push_back(node.children[i]);
+                    } else if (axis == 1 && centroids[node.children[i]].y == centroids[node.children[node.children.size() / 2 - 1]].y) {
+                        leftChild.children.push_back(node.children[i]);
+                    } else if (axis == 2 && centroids[node.children[i]].z == centroids[node.children[node.children.size() / 2 - 1]].z) {
+                        leftChild.children.push_back(node.children[i]);
+                    } else {*/
+                        rightChild.children.push_back(node.children[i]);
+                    //}
+                }
+            }
         node.children.clear(); // remove the children index from the parent
 
         subdivideNode(leftChild, centroids, (axis + 1) % 3, depth + 1);
@@ -176,7 +186,7 @@ int BoundingVolumeHierarchy::numLeaves() const
     return m_numLeaves;
 }
 
-void BoundingVolumeHierarchy::showLevel(Node node, int currentLevel, int targetLevel, std::vector <AxisAlignedBox>& toDraw)
+void BoundingVolumeHierarchy::showLevel(Node& node, int currentLevel, int targetLevel, std::vector <AxisAlignedBox>& toDraw)
 {
     if (currentLevel == targetLevel) {
         AxisAlignedBox aabb {node.lower, node.upper};
@@ -195,15 +205,6 @@ void BoundingVolumeHierarchy::showLevel(Node node, int currentLevel, int targetL
 // mode, arbitrary colors and transparency.
 void BoundingVolumeHierarchy::debugDrawLevel(int level)
 {
-    // Draw the AABB as a transparent green box.
-    //AxisAlignedBox aabb{ glm::vec3(-0.05f), glm::vec3(0.05f, 1.05f, 1.05f) };
-    //drawShape(aabb, DrawMode::Filled, glm::vec3(0.0f, 1.0f, 0.0f), 0.2f);
-
-    // Draw the AABB as a (white) wireframe box.
-
-    //AxisAlignedBox aabb { glm::vec3(0.0f), glm::vec3(0.0f, 1.05f, 1.05f) };
-    //drawAABB(aabb, DrawMode::Wireframe);
-    //drawAABB(aabb, DrawMode::Filled, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
     std::vector<AxisAlignedBox> toDraw;
     showLevel(nodes[nodes.size() - 1], 0, level, toDraw);
 
@@ -212,6 +213,22 @@ void BoundingVolumeHierarchy::debugDrawLevel(int level)
     }
 }
 
+void BoundingVolumeHierarchy::getLeaf(int index, int& leafIdx, int& result)
+{
+    Node node = nodes[index];
+
+    if (node.isLeaf) {
+        if (leafIdx == 0)
+            result = index;
+
+        leafIdx--;
+    } else {
+        if (!node.isLeaf) {
+            getLeaf(node.children[0], leafIdx, result);
+            getLeaf(node.children[1], leafIdx, result);
+        }
+    }
+}
 
 // Use this function to visualize your leaf nodes. This is useful for debugging. The function
 // receives the leaf node to be draw (think of the ith leaf node). Draw the AABB of the leaf node and all contained triangles.
@@ -219,14 +236,39 @@ void BoundingVolumeHierarchy::debugDrawLevel(int level)
 // i-th leaf node in the vector.
 void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
 {
-    // Draw the AABB as a transparent green box.
-    //AxisAlignedBox aabb{ glm::vec3(-0.05f), glm::vec3(0.05f, 1.05f, 1.05f) };
-    //drawShape(aabb, DrawMode::Filled, glm::vec3(0.0f, 1.0f, 0.0f), 0.2f);
+    int leafIndex = nodes.size() - 1;
+    int result = 0;
 
-    // Draw the AABB as a (white) wireframe box.
-    AxisAlignedBox aabb { glm::vec3(0.0f), glm::vec3(0.0f, 1.05f, 1.05f) };
-    //drawAABB(aabb, DrawMode::Wireframe);
-    drawAABB(aabb, DrawMode::Filled, glm::vec3(0.05f, 1.0f, 0.05f), 0.1f);
+    getLeaf(leafIndex, leafIdx, result);
+
+    drawAABB(AxisAlignedBox { nodes[result].lower, nodes[result].upper }, DrawMode::Wireframe, glm::vec3(1), 0.4f);
+
+    for (int i = 0; i < nodes[result].children.size(); i++) {
+        int primitiveIndex = nodes[result].children[i];
+
+        // Find the mesh which contains this triangle
+        int mesh = 0;
+        while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+            primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
+        }
+
+        // Check if the primitive is a sphere or a triangle
+        if (m_pScene->meshes.size() <= mesh) {
+            Sphere sphere = m_pScene->spheres[primitiveIndex];
+
+            drawSphere(sphere);
+        } else {
+            // Get the triangle from the coresponding mesh
+            glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
+
+            // Get the vertices coordinates of the triangle
+            auto v0 = m_pScene->meshes[mesh].vertices[tri[0]];
+            auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
+            auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
+
+            drawTriangle(v0, v1, v2);
+        }
+    }
 
     // once you find the leaf node, you can use the function drawTriangle (from draw.h) to draw the contained primitives
 }

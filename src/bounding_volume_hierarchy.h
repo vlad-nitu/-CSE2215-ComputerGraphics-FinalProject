@@ -56,7 +56,9 @@ private:
 
     void subdivideNode(Node& node, std::vector<glm::vec3> centroids, int axis, int depth);
 
-    void showLevel(Node node, int currentLevel, int targetLevel, std::vector<AxisAlignedBox>& toDraw);
+    void showLevel(Node& node, int currentLevel, int targetLevel, std::vector<AxisAlignedBox>& toDraw);
+
+    void getLeaf(int index, int& leafIdx, int& result);
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
