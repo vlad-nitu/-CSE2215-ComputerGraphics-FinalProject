@@ -19,7 +19,7 @@ void BoundingVolumeHierarchy::computeAABB(Node& node)
 
         // Find the mesh which contains this triangle
         int mesh = 0;
-        while (m_pScene->meshes[mesh].triangles.size() < primitiveIndex) {
+        while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
             primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
         }
 
