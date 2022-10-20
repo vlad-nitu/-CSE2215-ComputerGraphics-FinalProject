@@ -106,6 +106,8 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                     if (features.enableNormalInterp) {
                         hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord); // Interpolate normal
 
+                        hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+
                         // Check if textures are turned on
                         if (features.enableTextureMapping) {
                             hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
