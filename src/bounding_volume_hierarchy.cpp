@@ -266,7 +266,7 @@ void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
             auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
             auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
 
-            drawTriangle(v0, v1, v2);
+            drawTriangle(v0, v1, v2, glm::vec3 { 0.3f, 0.4f, 0.8f });
         }
     }
 
