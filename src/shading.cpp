@@ -10,7 +10,13 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     glm::vec3 surfaceLightVector = glm::normalize(lightPosition - postion);
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
-    return lightColor * hitInfo.material.kd * dotProduct;
+    if (features.enableTextureMapping && hitInfo.material.kdTexture) {
+        glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
+
+        return lightColor * kd * dotProduct;
+    } else {
+        return lightColor * hitInfo.material.kd * dotProduct;
+    }
 }
 
 const glm::vec3 computeSpecular(const glm::vec3& lightPosition, const glm::vec3& lightColor, const Features& features, Ray ray, HitInfo hitInfo)
