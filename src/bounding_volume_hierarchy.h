@@ -55,7 +55,7 @@ struct Node {
 
 class BoundingVolumeHierarchy {
 private:
-    void computeAABB(Node& node);
+    //void computeAABB(Node& node);
 
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
@@ -64,6 +64,12 @@ private:
     void showLevel(Node& node, int currentLevel, int targetLevel);
 
     void getLeaf(int index, int& leafIdx, int& result);
+
+    void drawPrimitive(int primitiveIndex, const Ray& ray, const Features& features, const HitInfo& hitInfo) const;
+
+    bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
+
+    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
@@ -80,12 +86,6 @@ public:
 
     // Visual Debug 2: Draw the triangles of the i-th leaf
     void debugDrawLeaf(int leafIdx);
-
-    void drawPrimitive(int primitiveIndex) const;
-
-    bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
-
-    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
     // Return true if something is hit, returns false otherwise.
     // Only find hits if they are closer than t stored in the ray and the intersection
