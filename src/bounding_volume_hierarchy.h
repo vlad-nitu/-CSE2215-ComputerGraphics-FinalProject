@@ -8,6 +8,7 @@
 struct Scene;
 
 extern bool drawNormalInterpolationDebug;
+extern bool rayNodeIntersectionDebug;
 
 struct Node {
     bool isLeaf; // false for interior node and true for leafs.
@@ -80,9 +81,11 @@ public:
     // Visual Debug 2: Draw the triangles of the i-th leaf
     void debugDrawLeaf(int leafIdx);
 
+    void drawPrimitive(int primitiveIndex) const;
+
     bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
 
-    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features) const;
+    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
     // Return true if something is hit, returns false otherwise.
     // Only find hits if they are closer than t stored in the ray and the intersection

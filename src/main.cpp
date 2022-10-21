@@ -225,6 +225,8 @@ int main(int argc, char** argv)
 
                     ImGui::Spacing();
                     ImGui::Text("BVH Traversal");
+
+                    ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
                 }
 
                 if (config.features.enableNormalInterp) {
