@@ -68,9 +68,7 @@ computeShading(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, cons
 
 
 const Ray computeReflectionRay(Ray ray, HitInfo hitInfo) {
-    // Do NOT use glm::reflect!! write your own code.
     glm::vec3 point = ray.origin + ray.t * ray.direction;
-//    glm::vec3 point = hitInfo.barycentricCoord;
 
     glm::vec3 N = hitInfo.normal;
     glm::vec3 L = glm::normalize(ray.direction);
@@ -79,9 +77,6 @@ const Ray computeReflectionRay(Ray ray, HitInfo hitInfo) {
     glm::vec3 R = L - 2.0f * glm::dot(L, N) * N;
     glm::vec3 normalized_R = glm::normalize(R);
 
-//    normalized_R.direction = normalized_R;
-
     Ray reflectionRay{point, normalized_R, std::numeric_limits<float>::max()};
-
     return reflectionRay;
 }
