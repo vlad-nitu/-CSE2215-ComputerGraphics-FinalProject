@@ -79,7 +79,7 @@ const Ray computeReflectionRay(Ray ray, HitInfo hitInfo) {
     glm::vec3 R = 2.0f * glm::dot(L, N) * N - L;
     glm::vec3 normalized_R = glm::normalize(R);
 
-    reflectionRay.direction = normalized_R;
+//    normalized_R.direction = normalized_R;
 
     Ray reflectionRay{point, normalized_R, std::numeric_limits<float>::max()};
 
