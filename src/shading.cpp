@@ -2,6 +2,9 @@
 #include <cmath>
 #include <glm/geometric.hpp>
 #include <shading.h>
+#include "draw.h"
+
+bool drawReflectionDebug = false;
 
 const glm::vec3
 computeDiffuse(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, const Features &features, Ray ray,
@@ -78,5 +81,7 @@ const Ray computeReflectionRay(Ray ray, HitInfo hitInfo) {
     glm::vec3 normalized_R = glm::normalize(R);
 
     Ray reflectionRay{point, normalized_R, std::numeric_limits<float>::max()};
+    if (drawReflectionDebug)
+        drawRay(ray, glm::vec3{0, 0, 1});
     return reflectionRay;
 }

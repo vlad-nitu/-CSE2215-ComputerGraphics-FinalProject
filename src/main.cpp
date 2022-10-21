@@ -198,6 +198,8 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
                 if (debugBVHLeaf)
                     ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
+
+                ImGui::Checkbox("Draw Reflection debug", &drawReflectionDebug);
             }
 
             ImGui::Spacing();
