@@ -14,6 +14,8 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
 
         glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
 
+        // Draw a debug ray with the color returned from the shading.
+        drawRay(ray, Lo);
 
         if (features.enableRecursive) {
             Ray reflection = computeReflectionRay(ray, hitInfo);
@@ -26,8 +28,6 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
             // drawRay(reflection, Lo); // debug only atm
         }
         
-        // Draw a debug ray with the color returned from the shading.
-        drawRay(ray, Lo);
 
         // Set the color of the pixel.
         return Lo;
