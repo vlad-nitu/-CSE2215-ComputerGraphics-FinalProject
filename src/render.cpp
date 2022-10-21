@@ -22,6 +22,8 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
                 return Lo;
             else{
                 Lo = Lo + getFinalColor(scene, bvh, reflection, features, rayDepth - 1);
+                drawRay(reflection, Lo);
+                return Lo;
             }
             // drawRay(reflection, Lo); // debug only atm
         }
