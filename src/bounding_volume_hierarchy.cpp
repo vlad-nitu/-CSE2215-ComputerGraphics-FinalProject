@@ -518,7 +518,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
         // Create a struct used for the priority queue
         struct Trav {
-            int t;
+            float t;
             int NodeIndex;
         };
 
