@@ -14,15 +14,21 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
 
         glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
 
-        // Draw a debug ray with the color returned from the shading.
-        drawRay(ray, Lo);
 
         if (features.enableRecursive) {
             Ray reflection = computeReflectionRay(ray, hitInfo);
-            drawRay(reflection, Lo); // debug only atm
-            // TODO: put your own implementation of recursive ray tracing here.
+
+            if (hitInfo.material.ks == glm::vec3{0, 0, 0} || rayDepth == 0)
+                return Lo;
+            else{
+                Lo = Lo + getFinalColor(scene, bvh, reflection, features, rayDepth - 1);
+            }
+            // drawRay(reflection, Lo); // debug only atm
         }
         
+        // Draw a debug ray with the color returned from the shading.
+        drawRay(ray, Lo);
+
         // Set the color of the pixel.
         return Lo;
     } else {
