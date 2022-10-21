@@ -78,6 +78,8 @@ public:
     // Visual Debug 2: Draw the triangles of the i-th leaf
     void debugDrawLeaf(int leafIdx);
 
+    bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
+
     bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features) const;
 
     // Return true if something is hit, returns false otherwise.

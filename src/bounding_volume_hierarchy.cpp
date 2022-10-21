@@ -322,6 +322,13 @@ void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
     // once you find the leaf node, you can use the function drawTriangle (from draw.h) to draw the contained primitives
 }
 
+bool BoundingVolumeHierarchy::isInAABB(Ray& ray, AxisAlignedBox& aabb) const
+{
+    return ((aabb.lower.x <= ray.origin.x && ray.origin.x <= aabb.upper.x) && 
+        (aabb.lower.y <= ray.origin.y && ray.origin.y <= aabb.upper.y) && 
+        (aabb.lower.z <= ray.origin.z && ray.origin.z <= aabb.upper.z));
+}
+
 bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features) const
 {
     bool hit = false;
@@ -565,7 +572,12 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                                     // If ray intersects AABB put into queue
                                     if (intersectRayWithShape(leftChildBox, ray)) {
-                                        Trav leftChild = { ray.t, otherNode.children[0] };
+                                        Trav leftChild ;
+                                        if (isInAABB(ray, leftChildBox)) {
+                                            leftChild = { 0, otherNode.children[0] };
+                                        } else {
+                                            leftChild = { ray.t, otherNode.children[0] };
+                                        }
                                         ray.t = oldT; // No need to remember the AABB intersection t
 
                                         // Add children to the queue only if they show potential for a better hit
@@ -578,7 +590,13 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                                     // If ray intersects AABB put into queue
                                     if (intersectRayWithShape(rightChildBox, ray)) {
-                                        Trav rightChild = { ray.t, otherNode.children[1] };
+                                        Trav rightChild;
+                                        if (isInAABB(ray, rightChildBox)) {
+                                            rightChild = { 0, otherNode.children[1] };
+                                        }
+                                        else {
+                                            rightChild = { ray.t, otherNode.children[1] };
+                                        }
                                         ray.t = oldT; // No need to remember the AABB intersection t
 
                                         // Add children to the queue only if they show potential for a better hit
@@ -597,7 +615,12 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                     // If ray intersects AABB put into queue
                     if (intersectRayWithShape(leftChildBox, ray)) {
-                        Trav leftChild = { ray.t, node.children[0] };
+                        Trav leftChild;
+                        if (isInAABB(ray, leftChildBox)) {
+                            leftChild = { 0, node.children[0] };
+                        } else {
+                            leftChild = { ray.t, node.children[0] };
+                        }
                         ray.t = oldT; // No need to remember the AABB intersection t
 
                         // Add children to the queue only if they show potential for a better hit
@@ -610,7 +633,12 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                     // If ray intersects AABB put into queue
                     if (intersectRayWithShape(rightChildBox, ray)) {
-                        Trav rightChild = { ray.t, node.children[1] };
+                        Trav rightChild;
+                        if (isInAABB(ray, rightChildBox)) {
+                            rightChild = { 0, node.children[1] };
+                        } else {
+                            rightChild = { ray.t, node.children[1] };
+                        }
                         ray.t = oldT; // No need to remember the AABB intersection t
 
                         // Add children to the queue only if they show potential for a better hit
