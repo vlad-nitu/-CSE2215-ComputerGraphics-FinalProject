@@ -45,14 +45,8 @@ void BoundingVolumeHierarchy::computeAABB(Node& node)
             glm::vec3 v2 = m_pScene->meshes[mesh].vertices[tri[2]].position;
 
             // Update the max and min values coordinate-wise
-            low = glm::min(v0, low);
-            high = glm::max(v0, high);
-
-            low = glm::min(v1, low);
-            high = glm::max(v1, high);
-
-            low = glm::min(v2, low);
-            high = glm::max(v2, high);
+            low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
+            high = glm::max(high, glm::max(v0, glm::max(v1, v2)));
         }
     }
 
@@ -277,14 +271,14 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
     Vertex bestV0 = m_pScene->meshes[0].vertices[0];
     Vertex bestV1 = m_pScene->meshes[0].vertices[0];
     Vertex bestV2 = m_pScene->meshes[0].vertices[0];
-    float bestTriangleT = std::numeric_limits<float>::max();
+    float bestTriangleT = ray.t;
 
     Sphere bestSphere;
     if (m_pScene->spheres.size() > 0)
         bestSphere = m_pScene->spheres[0];
     else
         bestSphere = Sphere();
-    float bestSphereT = std::numeric_limits<float>::max();
+    float bestSphereT = ray.t;
 
 
     for (int i = 0; i < node.children.size(); i++) {
@@ -491,24 +485,40 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                 Node node = nodes[current.NodeIndex];
 
+                // If node is leaf test its primitives, otherwise test its children
                 if (node.isLeaf) {
-                    if (testPrimitives(node, ray, hitInfo, features))
+                    if (testPrimitives(node, ray, hitInfo, features)) {
+
+                        // Check for all the AABBs that are at the same distance from the camera as the current one
+                        while (queue.top().t == current.t) {
+                            Trav sameDistanceAABB = queue.top();
+                            queue.pop();
+
+                            Node otherNode = nodes[sameDistanceAABB.NodeIndex];
+
+                            // Test the primitives of all the nodes with the same distance
+                            testPrimitives(otherNode, ray, hitInfo, features);
+                        }
+
                         return true;
+                    }
                 } else {
                     AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
-                    oldT = ray.t;
+                    oldT = ray.t; 
                     if (intersectRayWithShape(leftChildBox, ray)) {
                         Trav leftChild = { ray.t, node.children[0] };
-                        ray.t = oldT;
-                        queue.push(leftChild);
+                        ray.t = oldT; // No need to remember the AABB intersection t
+
+                        queue.push(leftChild); // If ray intersects AABB put into queue
                     }
 
                     AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
                     oldT = ray.t;
                     if (intersectRayWithShape(rightChildBox, ray)) {
                         Trav rightChild = { ray.t, node.children[1] };
-                        ray.t = oldT;
-                        queue.push(rightChild);
+                        ray.t = oldT; // No need to remember the AABB intersection t
+
+                        queue.push(rightChild); // If ray intersects AABB put into queue
                     }
                 }
             }
