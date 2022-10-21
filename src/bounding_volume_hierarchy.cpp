@@ -479,8 +479,6 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
             queue.push(root);
             ray.t = oldT;
 
-            float intersectT = oldT;
-
             while (queue.size() > 0) {
                 Trav current = queue.top();
                 queue.pop();
@@ -489,67 +487,84 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                 // If node is leaf test its primitives, otherwise test its children
                 if (node.isLeaf) {
-                    //if (testPrimitives(node, ray, hitInfo, features)) {
-                    hit |= testPrimitives(node, ray, hitInfo, features);
-                    intersectT = ray.t;
-                    //    // Check for all the AABBs that are at the same distance from the camera as the current one
-                    //    while (queue.size() > 0 && queue.top().t == current.t) {
-                    //        Trav sameDistanceAABB = queue.top();
-                    //        queue.pop();
 
-                    //        Node otherNode = nodes[sameDistanceAABB.NodeIndex];
+                    if (testPrimitives(node, ray, hitInfo, features)) {
 
-                    //        if (otherNode.isLeaf) {
-                    //            testPrimitives(otherNode, ray, hitInfo, features);
-                    //        } else {
-                    //            AxisAlignedBox leftChildBox = { nodes[otherNode.children[0]].lower, nodes[otherNode.children[0]].upper };
-                    //            oldT = ray.t;
-                    //            if (intersectRayWithShape(leftChildBox, ray)) {
-                    //                Trav leftChild = { ray.t, otherNode.children[0] };
-                    //                ray.t = oldT; // No need to remember the AABB intersection t
+                        // If we can find AABBs with an equal or smaller t we try to intersect with them as well
+                        while (queue.size() > 0) {
+                            Trav other = queue.top();
+                            queue.pop();
 
-                    //                if (leftChild.t <= current.t)
-                    //                    queue.push(leftChild); // If ray intersects AABB put into queue
-                    //            }
+                            // The current AABB has potentian for a better hit
+                            if (other.t <= ray.t) {
+                                Node otherNode = nodes[other.NodeIndex];
 
-                    //            AxisAlignedBox rightChildBox = { nodes[otherNode.children[1]].lower, nodes[otherNode.children[1]].upper };
-                    //            oldT = ray.t;
-                    //            if (intersectRayWithShape(rightChildBox, ray)) {
-                    //                Trav rightChild = { ray.t, otherNode.children[1] };
-                    //                ray.t = oldT; // No need to remember the AABB intersection t
+                                if (otherNode.isLeaf) {
+                                    // If the node is a leaf then test its intersection
+                                    testPrimitives(otherNode, ray, hitInfo, features);
+                                } else {
+                                    AxisAlignedBox leftChildBox = { nodes[otherNode.children[0]].lower, nodes[otherNode.children[0]].upper };
+                                    oldT = ray.t;
 
-                    //                if (rightChild.t <= current.t)
-                    //                 queue.push(rightChild); // If ray intersects AABB put into queue
-                    //            }
-                    //        }
-                    //    }
+                                    // If ray intersects AABB put into queue
+                                    if (intersectRayWithShape(leftChildBox, ray)) {
+                                        Trav leftChild = { ray.t, otherNode.children[0] };
+                                        ray.t = oldT; // No need to remember the AABB intersection t
 
-                    //    return true;
-                    //}
+                                        // Add children to the queue only if they show potential for a better hit
+                                        if (leftChild.t <= ray.t)
+                                            queue.push(leftChild);
+                                    }
+
+                                    AxisAlignedBox rightChildBox = { nodes[otherNode.children[1]].lower, nodes[otherNode.children[1]].upper };
+                                    oldT = ray.t;
+
+                                    // If ray intersects AABB put into queue
+                                    if (intersectRayWithShape(rightChildBox, ray)) {
+                                        Trav rightChild = { ray.t, otherNode.children[1] };
+                                        ray.t = oldT; // No need to remember the AABB intersection t
+
+                                        // Add children to the queue only if they show potential for a better hit
+                                        if (rightChild.t <= ray.t)
+                                            queue.push(rightChild);
+                                    }
+                                }
+                            }
+
+                        }
+
+                        return true;
+                    }
                 } else {
                     AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
                     oldT = ray.t; 
+
+                    // If ray intersects AABB put into queue
                     if (intersectRayWithShape(leftChildBox, ray)) {
                         Trav leftChild = { ray.t, node.children[0] };
                         ray.t = oldT; // No need to remember the AABB intersection t
 
+                        // Add children to the queue only if they show potential for a better hit
                         if (leftChild.t <= ray.t)
-                            queue.push(leftChild); // If ray intersects AABB put into queue
+                            queue.push(leftChild);
                     }
 
                     AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
                     oldT = ray.t;
+
+                    // If ray intersects AABB put into queue
                     if (intersectRayWithShape(rightChildBox, ray)) {
                         Trav rightChild = { ray.t, node.children[1] };
                         ray.t = oldT; // No need to remember the AABB intersection t
 
+                        // Add children to the queue only if they show potential for a better hit
                         if (rightChild.t <= ray.t)
-                            queue.push(rightChild); // If ray intersects AABB put into queue
+                            queue.push(rightChild); 
                     }
                 }
             }
         }
 
-        return hit;
+        return false;
     }
 }
