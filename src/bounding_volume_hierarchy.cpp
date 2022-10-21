@@ -93,7 +93,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                 if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
 
-                    if (ray.t < bestSphereT) {
+                    if (ray.t < bestTriangleT) {
                         bestTriangleT = ray.t;
                         bestV0 = v0;
                         bestV1 = v1;
