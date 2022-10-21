@@ -197,18 +197,40 @@ int main(int argc, char** argv)
             ImGui::Separator();
             ImGui::Text("Debugging");
             if (viewMode == ViewMode::Rasterization) {
-                ImGui::Checkbox("Draw shading debug", &drawDebugShading);
-                ImGui::Checkbox("Draw reflection debug", &drawReflectionDebug);
 
-                ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
-                if (debugBVHLevel)
-                    ImGui::SliderInt("BVH Level", &bvhDebugLevel, 0, bvh.numLevels() - 1);
-                ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
-                if (debugBVHLeaf)
-                    ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
+                if (config.features.enableShading) {
+                    ImGui::Text("Shading");
+                    ImGui::Checkbox("Draw shading debug", &drawDebugShading);
+                }
 
-                ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
-                
+                if (config.features.enableRecursive) {
+                    ImGui::Text("Recursive ray-tracer");
+                    ImGui::Checkbox("Draw reflection debug", &drawReflectionDebug);
+                }
+
+                if (config.features.enableHardShadow) {
+                    ImGui::Text("Hard shadows");
+                    ImGui::Checkbox("Draw shadow ray", &drawShadowRayDebug);
+                }
+
+                if (config.features.enableAccelStructure) {
+                    ImGui::Text("BVH Construction");
+
+                    ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
+                    if (debugBVHLevel)
+                        ImGui::SliderInt("BVH Level", &bvhDebugLevel, 0, bvh.numLevels() - 1);
+                    ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
+                    if (debugBVHLeaf)
+                        ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
+
+                    ImGui::Spacing();
+                    ImGui::Text("BVH Traversal");
+                }
+
+                if (config.features.enableNormalInterp) {
+                    ImGui::Text("Normal Interpolation");
+                    ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
+                }
             }
 
             ImGui::Spacing();
