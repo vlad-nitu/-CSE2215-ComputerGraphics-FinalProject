@@ -205,7 +205,7 @@ int main(int argc, char** argv)
 
                 if (config.features.enableRecursive) {
                     ImGui::Text("Recursive ray-tracer");
-                    ImGui::Checkbox("Draw reflection debug", &drawReflectionDebug);
+                    ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
                 }
 
                 if (config.features.enableHardShadow) {
