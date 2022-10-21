@@ -7,6 +7,8 @@
 #include <omp.h>
 #endif
 
+bool drawDebugShading = false;
+
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
     HitInfo hitInfo;
@@ -14,12 +16,17 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
 
         glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
 
-        // Draw a debug ray with the color returned from the shading.
-        drawRay(ray, Lo);
 
         if (features.enableRecursive) {
             Ray reflection = computeReflectionRay(ray, hitInfo);
             // TODO: put your own implementation of recursive ray tracing here.
+        }
+
+        // Draw a debug ray with the color returned from the shading.
+        if (drawDebugShading) {
+            drawRay(ray, Lo);
+        } else {
+            drawRay(ray, glm::vec3 { 1 });
         }
         
         // Set the color of the pixel.

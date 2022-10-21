@@ -13,6 +13,8 @@ class Trackball;
 class BvhInterface;
 struct Features;
 
+extern bool drawDebugShading;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
 
