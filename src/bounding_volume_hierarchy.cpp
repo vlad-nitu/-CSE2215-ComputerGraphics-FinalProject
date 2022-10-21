@@ -1,21 +1,21 @@
 #include "bounding_volume_hierarchy.h"
 #include "draw.h"
+#include "interpolate.h"
 #include "intersect.h"
 #include "scene.h"
 #include "texture.h"
-#include "interpolate.h"
 #include <glm/glm.hpp>
 #include <queue>
 
 /*
-* Given a node, computer the bounding volume
-*/
+ * Given a node, computer the bounding volume
+ */
 void BoundingVolumeHierarchy::computeAABB(Node& node)
 {
     glm::vec3 low = glm::vec3 { std::numeric_limits<float>::max() };
     glm::vec3 high = glm::vec3 { -std::numeric_limits<float>::max() };
 
-    for (int i = 0; i< node.children.size(); i++) {
+    for (int i = 0; i < node.children.size(); i++) {
         int primitiveIndex = node.children[i];
 
         // Find the mesh which contains this triangle
@@ -54,6 +54,40 @@ void BoundingVolumeHierarchy::computeAABB(Node& node)
     node.upper = high;
 }
 
+void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high)
+{
+    // Find the mesh which contains this triangle
+    int mesh = 0;
+    while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+        primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
+    }
+
+    // Check if the primitive is a sphere or a triangle
+    if (m_pScene->meshes.size() <= mesh) { // !!!!!!!!!!!!!!!!! Make sure the equality sign is right
+        Sphere sphere = m_pScene->spheres[primitiveIndex];
+
+        // Computer the maximum and minimum coordinates of the sphere
+        glm::vec3 sphereMin = sphere.center - glm::vec3 { sphere.radius };
+        glm::vec3 sphereMax = sphere.center + glm::vec3 { sphere.radius };
+
+        // Update the max and min values coordinate-wise
+        low = glm::min(sphereMin, low);
+        high = glm::max(sphereMax, high);
+    } else {
+        // Get the triangle from the coresponding mesh
+        glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
+
+        // Get the vertices coordinates of the triangle
+        glm::vec3 v0 = m_pScene->meshes[mesh].vertices[tri[0]].position;
+        glm::vec3 v1 = m_pScene->meshes[mesh].vertices[tri[1]].position;
+        glm::vec3 v2 = m_pScene->meshes[mesh].vertices[tri[2]].position;
+
+        // Update the max and min values coordinate-wise
+        low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
+        high = glm::max(high, glm::max(v0, glm::max(v1, v2)));
+    }
+}
+
 /// <summary>
 /// Computes the AABB for a given node and decides to split it if the node has more than one primitive inside
 /// </summary>
@@ -63,12 +97,12 @@ void BoundingVolumeHierarchy::computeAABB(Node& node)
 /// <param name="depth"> The depth of the given node. </param>
 void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth)
 {
-    computeAABB(node);
+    //computeAABB(node);
 
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
 
-    if (node.children.size() <= 5) {
+    if (node.children.size() <= 4) {
         nodes.push_back(node); // Add the node to the hierarchy
 
         return;
@@ -83,8 +117,8 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& 
 
         // Sort method taken from https://en.cppreference.com/w/cpp/algorithm/sort
         /*
-        * Sort the indices based on the centroids by the current axis in order to find the median one.
-        */
+         * Sort the indices based on the centroids by the current axis in order to find the median one.
+         */
         std::sort(node.children.begin(), node.children.end(), [centroids, axis](int a, int b) {
             if (axis == 0)
                 return centroids[a].x < centroids[b].x;
@@ -95,30 +129,38 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& 
         });
 
         // Move the primitives to the children based on the centroids
-            for (int i = 0; i < node.children.size(); i++) {
+        glm::vec3 leftMin = glm::vec3 { std::numeric_limits<float>::max() };
+        glm::vec3 leftMax = glm::vec3 { -std::numeric_limits<float>::max() };
 
-                if (i < node.children.size() / 2) {
-                    leftChild.children.push_back(node.children[i]);
-                } else {
-                    /*if (axis == 0 && centroids[node.children[i]].x == centroids[node.children[node.children.size() / 2 - 1]].x) {
-                        leftChild.children.push_back(node.children[i]);
-                    } else if (axis == 1 && centroids[node.children[i]].y == centroids[node.children[node.children.size() / 2 - 1]].y) {
-                        leftChild.children.push_back(node.children[i]);
-                    } else if (axis == 2 && centroids[node.children[i]].z == centroids[node.children[node.children.size() / 2 - 1]].z) {
-                        leftChild.children.push_back(node.children[i]);
-                    } else {*/
-                        rightChild.children.push_back(node.children[i]);
-                    //}
-                }
+        glm::vec3 rightMin = glm::vec3 { std::numeric_limits<float>::max() };
+        glm::vec3 rightMax = glm::vec3 { -std::numeric_limits<float>::max() };
+
+        for (int i = 0; i < node.children.size(); i++) {
+
+            if (i < node.children.size() / 2) {
+                leftChild.children.push_back(node.children[i]);
+                updateAABB(node.children[i], leftMin, leftMax);
+            } else {
+                rightChild.children.push_back(node.children[i]);
+                updateAABB(node.children[i], rightMin, rightMax);
             }
-        node.children.clear(); // remove the children index from the parent
+        }
+
+        // Assign AABBs to children nodes
+        leftChild.lower = leftMin;
+        leftChild.upper = leftMax;
+
+        rightChild.lower = rightMin;
+        rightChild.upper = rightMax;
+
+        node.children.clear(); // Remove the children index from the parent
 
         subdivideNode(leftChild, centroids, (axis + 1) % 3, depth + 1);
         node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
-        
+
         subdivideNode(rightChild, centroids, (axis + 1) % 3, depth + 1);
         node.children.push_back(nodes.size() - 1); // remember the index of the right child for the parent
-        
+
         // Add the node to the hierarchy
         nodes.push_back(node);
     }
@@ -131,16 +173,16 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
     m_numLevels = 1;
 
     /*
-    * Create a list containing the centers of all the triangles and spheres
-    * 
-    * Follows the same ordering as for the flattened list of triangles used in the node struct
-    */
+     * Create a list containing the centers of all the triangles and spheres
+     *
+     * Follows the same ordering as for the flattened list of triangles used in the node struct
+     */
     std::vector<glm::vec3> centroids;
 
-    /*
-     * PLS pay attention to this
-     */
-    Node root = Node(true); // No idea if I need to use the 'new' keyword or not
+    Node root = Node(true);
+
+    glm::vec3 low = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 high = glm::vec3 { -std::numeric_limits<float>::max() };
 
     int primitiveIndex = 0;
     for (const auto& mesh : m_pScene->meshes) {
@@ -149,8 +191,13 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
             const auto v1 = mesh.vertices[tri[1]].position;
             const auto v2 = mesh.vertices[tri[2]].position;
 
-            glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 {3};
+            // Compute centroids
+            glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
             centroids.push_back(centre);
+
+            // Compute root's AABB boundry
+            low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
+            high = glm::max(high, glm::max(v0, glm::max(v1, v2)));
 
             // Add all the primitives inside of the node
             root.children.push_back(primitiveIndex++);
@@ -160,9 +207,20 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
     for (const auto& sphere : m_pScene->spheres) {
         centroids.push_back(sphere.center);
 
+        // Computer the maximum and minimum coordinates of the sphere
+        glm::vec3 sphereMin = sphere.center - glm::vec3 { sphere.radius };
+        glm::vec3 sphereMax = sphere.center + glm::vec3 { sphere.radius };
+
+        // Update the max and min values coordinate-wise
+        low = glm::min(sphereMin, low);
+        high = glm::max(sphereMax, high);
+
         // Add the sphere primitives inside the node
         root.children.push_back(primitiveIndex++);
     }
+
+    root.lower = low;
+    root.upper = high;
 
     subdivideNode(root, centroids, 0, 0);
 }
@@ -184,7 +242,7 @@ int BoundingVolumeHierarchy::numLeaves() const
 void BoundingVolumeHierarchy::showLevel(Node& node, int currentLevel, int targetLevel)
 {
     if (currentLevel == targetLevel) {
-        AxisAlignedBox aabb {node.lower, node.upper};
+        AxisAlignedBox aabb { node.lower, node.upper };
 
         drawAABB(aabb, DrawMode::Wireframe, glm::vec3(1), 0.4f);
     } else {
@@ -280,7 +338,6 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
         bestSphere = Sphere();
     float bestSphereT = ray.t;
 
-
     for (int i = 0; i < node.children.size(); i++) {
         int primitiveIndex = node.children[i];
 
@@ -325,7 +382,7 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
                 if (features.enableNormalInterp) {
                     hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord);
 
-                     hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+                    hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
 
                     if (features.enableTextureMapping) {
                         hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
@@ -377,7 +434,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         Vertex bestV1 = m_pScene->meshes[0].vertices[0];
         Vertex bestV2 = m_pScene->meshes[0].vertices[0];
         float bestTriangleT = ray.t;
-        
+
         Sphere bestSphere;
         if (m_pScene->spheres.size() > 0)
             bestSphere = m_pScene->spheres[0];
@@ -439,17 +496,17 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         // Draw debug for normal interpolation for the best primitive intersection
         if (features.enableNormalInterp) {
             if (bestTriangleT < bestSphereT) {
-                drawRay({bestV0.position, bestV0.normal, 0.2f}, glm::vec3 { 0, 0, 1 });
-                drawRay({bestV1.position, bestV1.normal, 0.2f}, glm::vec3 { 0, 0, 1 });
-                drawRay({bestV2.position, bestV2.normal, 0.2f}, glm::vec3 { 0, 0, 1 });
+                drawRay({ bestV0.position, bestV0.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
+                drawRay({ bestV1.position, bestV1.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
+                drawRay({ bestV2.position, bestV2.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
 
-                drawRay({ray.origin + ray.t * ray.direction, hitInfo.normal, 0.2f}, glm::vec3 { 0, 1, 0 });
+                drawRay({ ray.origin + ray.t * ray.direction, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 });
                 // Use this one in case the interpolated normal should have the same direction as the vertex ones
-                //drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.2f }, glm::vec3 { 0, 1, 0 });
+                // drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.2f }, glm::vec3 { 0, 1, 0 });
             } else {
                 glm::vec3 p = ray.origin + ray.t * ray.direction;
 
-                drawRay({p, p - bestSphere.center, 0.2f}, glm::vec3 { 0, 1, 0 });
+                drawRay({ p, p - bestSphere.center, 0.2f }, glm::vec3 { 0, 1, 0 });
             }
         }
 
@@ -460,7 +517,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         // to isolate the code that is only needed for the normal interpolation and texture mapping features.
 
         // Create a struct used for the priority queue
-        struct Trav{
+        struct Trav {
             int t;
             int NodeIndex;
         };
@@ -530,14 +587,13 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                     }
                                 }
                             }
-
                         }
 
                         return true;
                     }
                 } else {
                     AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
-                    oldT = ray.t; 
+                    oldT = ray.t;
 
                     // If ray intersects AABB put into queue
                     if (intersectRayWithShape(leftChildBox, ray)) {
@@ -559,7 +615,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                         // Add children to the queue only if they show potential for a better hit
                         if (rightChild.t <= ray.t)
-                            queue.push(rightChild); 
+                            queue.push(rightChild);
                     }
                 }
             }
