@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <queue>
 
+bool drawNormalInterpolationDebug = false;
+
 /*
  * Given a node, computer the bounding volume
  */
@@ -408,15 +410,14 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
         }
     }
 
-    if (features.enableNormalInterp) {
+    if (features.enableNormalInterp && drawNormalInterpolationDebug) {
         if (bestTriangleT < bestSphereT) {
             drawRay({ bestV0.position, bestV0.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
             drawRay({ bestV1.position, bestV1.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
             drawRay({ bestV2.position, bestV2.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
 
-            drawRay({ ray.origin + ray.t * ray.direction, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 });
-            // Use this one in case the interpolated normal should have the same direction as the vertex ones
-            // drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.2f }, glm::vec3 { 0, 1, 0 });
+            drawRay({ ray.origin + ray.t * ray.direction, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 }); // Normal
+            drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.4f }, glm::vec3 { 0, 0, 1 }); // Interpolated normal
         } else {
             glm::vec3 p = ray.origin + ray.t * ray.direction;
 
@@ -501,15 +502,14 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         }
 
         // Draw debug for normal interpolation for the best primitive intersection
-        if (features.enableNormalInterp) {
+        if (features.enableNormalInterp && drawNormalInterpolationDebug) {
             if (bestTriangleT < bestSphereT) {
                 drawRay({ bestV0.position, bestV0.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
                 drawRay({ bestV1.position, bestV1.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
                 drawRay({ bestV2.position, bestV2.normal, 0.2f }, glm::vec3 { 0, 0, 1 });
 
-                drawRay({ ray.origin + ray.t * ray.direction, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 });
-                // Use this one in case the interpolated normal should have the same direction as the vertex ones
-                // drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.2f }, glm::vec3 { 0, 1, 0 });
+                drawRay({ ray.origin + ray.t * ray.direction, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 }); // Normal
+                drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.4f }, glm::vec3 { 0, 0, 1 }); // Interpolated normal
             } else {
                 glm::vec3 p = ray.origin + ray.t * ray.direction;
 

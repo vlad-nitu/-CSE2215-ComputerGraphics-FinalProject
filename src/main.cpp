@@ -3,6 +3,7 @@
 #include "light.h"
 #include "render.h"
 #include "screen.h"
+#include "bounding_volume_hierarchy.h"
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -134,6 +135,10 @@ int main(int argc, char** argv)
             if (ImGui::CollapsingHeader("Features", ImGuiTreeNodeFlags_DefaultOpen)) {
                 ImGui::Checkbox("Shading", &config.features.enableShading);
                 ImGui::Checkbox("Recursive(reflections)", &config.features.enableRecursive);
+                if (config.features.enableRecursive) {
+                    ImGui::SliderInt("Ray depth", &ray_depth, 0, 10);
+                }
+
                 ImGui::Checkbox("Hard shadows", &config.features.enableHardShadow);
                 ImGui::Checkbox("Soft shadows", &config.features.enableSoftShadow);
                 ImGui::Checkbox("BVH", &config.features.enableAccelStructure);
@@ -192,13 +197,18 @@ int main(int argc, char** argv)
             ImGui::Separator();
             ImGui::Text("Debugging");
             if (viewMode == ViewMode::Rasterization) {
+                ImGui::Checkbox("Draw shading debug", &drawDebugShading);
+                ImGui::Checkbox("Draw reflection debug", &drawReflectionDebug);
+
                 ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
                 if (debugBVHLevel)
                     ImGui::SliderInt("BVH Level", &bvhDebugLevel, 0, bvh.numLevels() - 1);
                 ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
                 if (debugBVHLeaf)
                     ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
-                ImGui::Checkbox("Draw shading debug", &drawDebugShading);
+
+                ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
+                
             }
 
             ImGui::Spacing();

@@ -7,6 +7,8 @@
 // Forward declaration.
 struct Scene;
 
+extern bool drawNormalInterpolationDebug;
+
 struct Node {
     bool isLeaf; // false for interior node and true for leafs.
 
