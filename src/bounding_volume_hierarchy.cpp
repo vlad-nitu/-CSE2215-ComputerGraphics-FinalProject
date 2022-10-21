@@ -490,14 +490,35 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                     if (testPrimitives(node, ray, hitInfo, features)) {
 
                         // Check for all the AABBs that are at the same distance from the camera as the current one
-                        while (queue.top().t == current.t) {
+                        while (queue.size() > 0 && queue.top().t == current.t) {
                             Trav sameDistanceAABB = queue.top();
                             queue.pop();
 
                             Node otherNode = nodes[sameDistanceAABB.NodeIndex];
 
-                            // Test the primitives of all the nodes with the same distance
-                            testPrimitives(otherNode, ray, hitInfo, features);
+                            if (otherNode.isLeaf) {
+                                testPrimitives(otherNode, ray, hitInfo, features);
+                            } else {
+                                AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
+                                oldT = ray.t;
+                                if (intersectRayWithShape(leftChildBox, ray)) {
+                                    Trav leftChild = { ray.t, node.children[0] };
+                                    ray.t = oldT; // No need to remember the AABB intersection t
+
+                                    if (leftChild.t <= current.t)
+                                        queue.push(leftChild); // If ray intersects AABB put into queue
+                                }
+
+                                AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
+                                oldT = ray.t;
+                                if (intersectRayWithShape(rightChildBox, ray)) {
+                                    Trav rightChild = { ray.t, node.children[1] };
+                                    ray.t = oldT; // No need to remember the AABB intersection t
+
+                                    if (rightChild.t <= current.t)
+                                     queue.push(rightChild); // If ray intersects AABB put into queue
+                                }
+                            }
                         }
 
                         return true;
