@@ -372,21 +372,87 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
     // If BVH is not enabled, use the naive implementation.
     if (!features.enableAccelStructure) {
         bool hit = false;
+
+        Vertex bestV0 = m_pScene->meshes[0].vertices[0];
+        Vertex bestV1 = m_pScene->meshes[0].vertices[0];
+        Vertex bestV2 = m_pScene->meshes[0].vertices[0];
+        float bestTriangleT = std::numeric_limits<float>::max();
+        
+        Sphere bestSphere;
+        if (m_pScene->spheres.size() > 0)
+            bestSphere = m_pScene->spheres[0];
+        else
+            bestSphere = Sphere();
+        float bestSphereT = std::numeric_limits<float>::max();
+
         // Intersect with all triangles of all meshes.
         for (const auto& mesh : m_pScene->meshes) {
             for (const auto& tri : mesh.triangles) {
                 const auto v0 = mesh.vertices[tri[0]];
                 const auto v1 = mesh.vertices[tri[1]];
                 const auto v2 = mesh.vertices[tri[2]];
+
                 if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
+
+                    if (ray.t < bestSphereT) {
+                        bestTriangleT = ray.t;
+                        bestV0 = v0;
+                        bestV1 = v1;
+                        bestV2 = v2;
+                    }
+
+                    hitInfo.barycentricCoord = computeBarycentricCoord(v0.position, v1.position, v2.position, ray.origin + ray.t * ray.direction);
+
+                    // Check if normal interpolation is turned on
+                    if (features.enableNormalInterp) {
+                        hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord); // Interpolate normal
+
+                        hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+
+                        // Check if textures are turned on
+                        if (features.enableTextureMapping) {
+                            hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
+                        }
+
+                    } else {
+                        glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
+
+                        hitInfo.normal = (glm::dot(ray.direction, normal) > 0) ? -normal : normal;
+                    }
+
                     hitInfo.material = mesh.material;
                     hit = true;
                 }
             }
         }
+
         // Intersect with spheres.
-        for (const auto& sphere : m_pScene->spheres)
+        for (const auto& sphere : m_pScene->spheres) {
             hit |= intersectRayWithShape(sphere, ray, hitInfo);
+
+            if (ray.t < bestSphereT) {
+                bestSphereT = ray.t;
+                bestSphere = sphere;
+            }
+        }
+
+        // Draw debug for normal interpolation for the best primitive intersection
+        if (features.enableNormalInterp) {
+            if (bestTriangleT < bestSphereT) {
+                drawRay({bestV0.position, bestV0.normal, 0.2f}, glm::vec3 { 0, 0, 1 });
+                drawRay({bestV1.position, bestV1.normal, 0.2f}, glm::vec3 { 0, 0, 1 });
+                drawRay({bestV2.position, bestV2.normal, 0.2f}, glm::vec3 { 0, 0, 1 });
+
+                drawRay({ray.origin + ray.t * ray.direction, hitInfo.normal, 0.2f}, glm::vec3 { 0, 1, 0 });
+                // Use this one in case the interpolated normal should have the same direction as the vertex ones
+                //drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.2f }, glm::vec3 { 0, 1, 0 });
+            } else {
+                glm::vec3 p = ray.origin + ray.t * ray.direction;
+
+                drawRay({p, p - bestSphere.center, 0.2f}, glm::vec3 { 0, 1, 0 });
+            }
+        }
+
         return hit;
     } else {
         // TODO: implement here the bounding volume hierarchy traversal.
@@ -423,8 +489,38 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 if (node.isLeaf) {
                     if (testPrimitives(node, ray, hitInfo, features)) {
 
-                        //TODO: Check intersection with all the nodes with the same t (must take all the leafs)
-                        
+                        // Check for all the AABBs that are at the same distance from the camera as the current one
+                        while (queue.size() > 0 && queue.top().t == current.t) {
+                            Trav sameDistanceAABB = queue.top();
+                            queue.pop();
+
+                            Node otherNode = nodes[sameDistanceAABB.NodeIndex];
+
+                            if (otherNode.isLeaf) {
+                                testPrimitives(otherNode, ray, hitInfo, features);
+                            } else {
+                                AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
+                                oldT = ray.t;
+                                if (intersectRayWithShape(leftChildBox, ray)) {
+                                    Trav leftChild = { ray.t, node.children[0] };
+                                    ray.t = oldT; // No need to remember the AABB intersection t
+
+                                    if (leftChild.t <= current.t)
+                                        queue.push(leftChild); // If ray intersects AABB put into queue
+                                }
+
+                                AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
+                                oldT = ray.t;
+                                if (intersectRayWithShape(rightChildBox, ray)) {
+                                    Trav rightChild = { ray.t, node.children[1] };
+                                    ray.t = oldT; // No need to remember the AABB intersection t
+
+                                    if (rightChild.t <= current.t)
+                                     queue.push(rightChild); // If ray intersects AABB put into queue
+                                }
+                            }
+                        }
+
                         return true;
                     }
                 } else {
