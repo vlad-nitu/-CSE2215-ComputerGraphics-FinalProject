@@ -61,7 +61,7 @@ void BoundingVolumeHierarchy::computeAABB(Node& node)
 /// <param name="centroids"> The list containing the centroids for all the primitives. </param>
 /// <param name="axis"> The axis on which the node will be split. 0 for x, 1 for y, 2 for z. </param>
 /// <param name="depth"> The depth of the given node. </param>
-void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3> centroids, int axis, int depth)
+void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth)
 {
     computeAABB(node);
 
