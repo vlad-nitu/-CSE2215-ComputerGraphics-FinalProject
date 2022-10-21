@@ -423,17 +423,8 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 if (node.isLeaf) {
                     if (testPrimitives(node, ray, hitInfo, features)) {
 
-                        // Check for all the AABBs that are at the same distance from the camera as the current one
-                        while (queue.top().t == current.t) {
-                            Trav sameDistanceAABB = queue.top();
-                            queue.pop();
-
-                            Node otherNode = nodes[sameDistanceAABB.NodeIndex];
-
-                            // Test the primitives of all the nodes with the same distance
-                            testPrimitives(otherNode, ray, hitInfo, features);
-                        }
-
+                        //TODO: Check intersection with all the nodes with the same t (must take all the leafs)
+                        
                         return true;
                     }
                 } else {
