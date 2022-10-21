@@ -20,9 +20,8 @@ glm::vec3 getFinalColor(const Scene &scene, const BvhInterface &bvh, Ray ray, co
 
             if (hitInfo.material.ks != glm::vec3{0, 0, 0} && rayDepth != 0) {
                 float angle = glm::dot(glm::normalize(ray.direction),  glm::normalize(reflection.direction));
-                Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth - 1) * glm::cos(angle);
+                Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth - 1) * glm::pow(angle, hitInfo.material.shininess);
             }
-            // drawRay(reflection, Lo); // debug only atm
         }
         // Draw a debug ray with the color returned from the shading.
         drawRay(ray, Lo);
