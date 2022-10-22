@@ -8,6 +8,7 @@
 #endif
 
 bool drawDebugShading = false;
+int ray_depth = 0;
 
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {

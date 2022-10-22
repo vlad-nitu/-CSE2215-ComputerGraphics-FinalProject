@@ -7,6 +7,7 @@ DISABLE_WARNINGS_PUSH()
 DISABLE_WARNINGS_POP()
 #include <cmath>
 
+bool drawShadowRayDebug = false;
 
 // samples a segment light source
 // you should fill in the vectors position and color with the sampled position and color
@@ -35,17 +36,20 @@ float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& deb
         glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
         float tLight = glm::distance(samplePos, currentPoint);
 
-        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, (tLight - 0.0001f) };
+        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, std::numeric_limits<float>::max() };
         if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
             if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
-                drawRay(pointTowardsLight, debugColor);
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, debugColor);
                 return 1.0f;
             } else {
-                drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
                 return 0.0f;
             }
         } else {
-            drawRay(pointTowardsLight, debugColor);
+            if (drawShadowRayDebug)
+                drawRay(pointTowardsLight, debugColor);
             return 1.0f;
         }
     } else {

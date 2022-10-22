@@ -3,6 +3,8 @@
 #include <glm/geometric.hpp>
 #include <shading.h>
 
+bool drawReflectionDebug = false;
+
 const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& lightColor, const Features& features, Ray ray, HitInfo hitInfo)
 {
     glm::vec3 postion = ray.origin + ray.t * ray.direction;
