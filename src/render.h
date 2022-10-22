@@ -13,8 +13,11 @@ class Trackball;
 class BvhInterface;
 struct Features;
 
+extern bool drawDebugShading;
+extern int ray_depth;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
 
 // Get the color of a ray.
-glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth = 10);
+glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth = ray_depth);

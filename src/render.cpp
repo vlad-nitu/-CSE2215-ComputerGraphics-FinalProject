@@ -8,7 +8,11 @@
 #include <omp.h>
 #endif
 
-glm::vec3 getFinalColor(const Scene &scene, const BvhInterface &bvh, Ray ray, const Features &features, int rayDepth) {
+bool drawDebugShading = false;
+int ray_depth = 0;
+
+glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
+{
     HitInfo hitInfo;
     if (bvh.intersect(ray, hitInfo, features)) {
 
@@ -23,9 +27,14 @@ glm::vec3 getFinalColor(const Scene &scene, const BvhInterface &bvh, Ray ray, co
                 Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth - 1);// * glm::pow(angle, hitInfo.material.shininess);
             }
         }
-        // Draw a debug ray with the color returned from the shading.
-        drawRay(ray, Lo);
 
+        // Draw a debug ray with the color returned from the shading.
+        if (drawDebugShading) {
+            drawRay(ray, Lo);
+        } else {
+            drawRay(ray, glm::vec3 { 1 });
+        }
+        
         // Set the color of the pixel.
         return Lo;
     } else {

@@ -3,6 +3,7 @@
 #include <framework/ray.h>
 
 extern bool drawReflectionDebug;
+
 // Compute the shading at the intersection point using the Phong model.
 const glm::vec3 computeShading (const glm::vec3& lightPosition, const glm::vec3& lightColor, const Features& features, Ray ray, HitInfo hitInfo);
 

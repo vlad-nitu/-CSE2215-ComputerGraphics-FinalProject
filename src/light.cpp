@@ -7,6 +7,7 @@ DISABLE_WARNINGS_PUSH()
 DISABLE_WARNINGS_POP()
 #include <cmath>
 
+bool drawShadowRayDebug = false;
 
 // samples a segment light source
 // you should fill in the vectors position and color with the sampled position and color
@@ -30,8 +31,30 @@ void sampleParallelogramLight(const ParallelogramLight& parallelogramLight, glm:
 // returns 1.0 if sample is visible, 0.0 otherwise
 float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& debugColor, const BvhInterface& bvh, const Features& features, Ray ray, HitInfo hitInfo)
 {
-    // TODO: implement this function.
-    return 1.0;
+    if (features.enableHardShadow) {
+        glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
+        glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
+        float tLight = glm::distance(samplePos, currentPoint);
+
+        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, std::numeric_limits<float>::max() };
+        if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
+            if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, debugColor);
+                return 1.0f;
+            } else {
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
+                return 0.0f;
+            }
+        } else {
+            if (drawShadowRayDebug)
+                drawRay(pointTowardsLight, debugColor);
+            return 1.0f;
+        }
+    } else {
+        return 1.0f;
+    }
 }
 
 // given an intersection, computes the contribution from all light sources at the intersection point
@@ -78,9 +101,11 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             if (std::holds_alternative<PointLight>(light)) {
                 const PointLight pointLight = std::get<PointLight>(light);
 
-                if (features.enableHardShadow && testVisibilityLightSample(pointLight.position, glm::vec3 { 1, 0, 0 }, bvh, features, ray, hitInfo)) 
-                    result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
-                else
+                if (features.enableHardShadow) {
+                    float lightContribution = testVisibilityLightSample(pointLight.position, pointLight.color, bvh, features, ray, hitInfo);
+
+                    result += lightContribution * computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
+                } else
                     result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
 
             } else if (std::holds_alternative<SegmentLight>(light)) {
