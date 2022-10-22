@@ -111,30 +111,50 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             } else if (std::holds_alternative<SegmentLight>(light)) {
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
-                if (features.enableSoftShadow) {
+                if (features.enableSoftShadow && features.enableHardShadow) {
+
+                    const int SAMPLE_COUNT = 20;
+
                     glm::vec3 position = glm::vec3 { 0 };
                     glm::vec3 color = glm::vec3 { 0 };
 
-                    sampleSegmentLight(segmentLight, position, color);
+                    for (int i = 0; i < SAMPLE_COUNT; i++) {
+                        glm::vec3 samplePosition = glm::vec3 { 0 };
+                        glm::vec3 sampleColor = glm::vec3 { 0 };
 
-                    result += computeShading(position, color, features, ray, hitInfo);
-                } else {
-                
+                        sampleSegmentLight(segmentLight, position, color);
+                    }
+                    position /= SAMPLE_COUNT;
+                    color /= SAMPLE_COUNT;
+
+                    float lightContribution = testVisibilityLightSample(position, color, bvh, features, ray, hitInfo);
+
+                    result += computeShading(position, color, features, ray, hitInfo) * lightContribution;
                 }
 
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
-                if (features.enableSoftShadow) {
+                if (features.enableSoftShadow && features.enableHardShadow) {
+
+                    const int SAMPLE_COUNT = 20;
+
                     glm::vec3 position = glm::vec3 { 0 };
                     glm::vec3 color = glm::vec3 { 0 };
 
-                    sampleParallelogramLight(parallelogramLight, position, color);
+                    for (int i = 0; i < SAMPLE_COUNT; i++) {
+                        glm::vec3 samplePosition = glm::vec3 { 0 };
+                        glm::vec3 sampleColor = glm::vec3 { 0 };
 
-                    result += computeShading(position, color, features, ray, hitInfo);
-                } else {
-                
-                }
+                        sampleParallelogramLight(parallelogramLight, position, color);
+                    }
+                    position /= SAMPLE_COUNT;
+                    color /= SAMPLE_COUNT;
+
+                    float lightContribution = testVisibilityLightSample(position, color, bvh, features, ray, hitInfo);
+
+                    result += computeShading(position, color, features, ray, hitInfo) * lightContribution;
+                } 
 
             }
         }
