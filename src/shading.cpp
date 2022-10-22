@@ -80,8 +80,8 @@ const Ray computeReflectionRay(Ray ray, HitInfo hitInfo) {
     glm::vec3 R = L - 2.0f * glm::dot(L, N) * N;
     glm::vec3 normalized_R = glm::normalize(R);
 
-    float ERR = 0.0001;
-    Ray reflectionRay{point, ERR * normalized_R, std::numeric_limits<float>::max()};
+    const float ERR = 1e-6;
+    Ray reflectionRay { point + ERR * normalized_R, normalized_R, std::numeric_limits<float>::max() };
     if (drawReflectionDebug)
         drawRay(reflectionRay, glm::vec3{0, 0, 1});
     return reflectionRay;
