@@ -56,6 +56,7 @@ float getRand(float x, float y)
 {
     //return glm::linearRand(x, y);
     
+    // Implementation taken from https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> dis(x, y);
@@ -104,6 +105,7 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
                             (float(x + (float(p) + getRand()) / n) / float(windowResolution.x)) * 2.0f - 1.0f,
                             (float(y + (float(q) + getRand()) / n) / float(windowResolution.y)) * 2.0f - 1.0f
                         };
+
                         const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
 
                         pixelColor += getFinalColor(scene, bvh, sampleRay, features);
