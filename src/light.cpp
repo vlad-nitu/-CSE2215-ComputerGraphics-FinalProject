@@ -6,6 +6,7 @@ DISABLE_WARNINGS_PUSH()
 #include <glm/geometric.hpp>
 DISABLE_WARNINGS_POP()
 #include <cmath>
+#include <random>
 
 bool drawShadowRayDebug = false;
 
@@ -13,22 +14,45 @@ bool drawShadowRayDebug = false;
 // you should fill in the vectors position and color with the sampled position and color
 void sampleSegmentLight(const SegmentLight& segmentLight, glm::vec3& position, glm::vec3& color)
 {
-    position = glm::vec3(0.0);
-    color = glm::vec3(0.0);
-    // TODO: implement this function.
+    // Generating a uniform random number in the interval [0; 1)
+    std::random_device rd;
+    std::default_random_engine engine(rd());
+    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
+    float alpha = uniform(engine);
+
+    // Computing the position coordinates (somewhere along the line-segment)
+    float coordX = alpha * segmentLight.endpoint1.x + (1.0f - alpha) * segmentLight.endpoint0.x;
+    float coordY = alpha * segmentLight.endpoint1.y + (1.0f - alpha) * segmentLight.endpoint0.y;
+    float coordZ = alpha * segmentLight.endpoint1.z + (1.0f - alpha) * segmentLight.endpoint0.z;
+    position = glm::vec3(coordX, coordY, coordZ);
+
+    // Computing the color (via linear interpolation)
+    color = (1.0f - alpha) * segmentLight.color0 + alpha * segmentLight.color1;
 }
 
 // samples a parallelogram light source
 // you should fill in the vectors position and color with the sampled position and color
+// Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 13, Section 13.4.2, pp. 331-332
 void sampleParallelogramLight(const ParallelogramLight& parallelogramLight, glm::vec3& position, glm::vec3& color)
 {
-    position = glm::vec3(0.0);
-    color = glm::vec3(0.0);
-    // TODO: implement this function.
+    // Generating two uniform random numbers in the interval [0; 1)
+    std::random_device rd;
+    std::default_random_engine engine(rd());
+    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
+    float alpha = uniform(engine);
+    float beta = uniform(engine);
+
+    // Computing the position coordinates (somewhere within the parallelogram)
+    position = parallelogramLight.v0 + alpha * parallelogramLight.edge01 + beta * parallelogramLight.edge02;
+
+    // Computing the color (via bilinear interpolation)
+    color = alpha * beta * parallelogramLight.color3 + (1.0f - alpha) * beta * parallelogramLight.color2
+        + (1.0f - alpha) * (1.0f - beta) * parallelogramLight.color0 + alpha * (1.0f - beta) * parallelogramLight.color1;
 }
 
 // test the visibility at a given light sample
 // returns 1.0 if sample is visible, 0.0 otherwise
+// Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 4, Section 4.7, pp. 86-87
 float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& debugColor, const BvhInterface& bvh, const Features& features, Ray ray, HitInfo hitInfo)
 {
     if (features.enableHardShadow) {
