@@ -209,8 +209,8 @@ int main(int argc, char** argv)
                 }
 
                 if (config.features.enableHardShadow) {
-                    ImGui::Text("Hard shadows");
-                    ImGui::Checkbox("Draw shadow ray", &drawShadowRayDebug);
+                    ImGui::Text("Hard (and soft) shadows");
+                    ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
                 }
 
                 if (config.features.enableAccelStructure) {

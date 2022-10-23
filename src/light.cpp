@@ -9,16 +9,18 @@ DISABLE_WARNINGS_POP()
 #include <random>
 
 bool drawShadowRayDebug = false;
+// Constant seed used for uniform random numbers (for sampling the line-segment and parallelogram light sources)
+// N.B.: Not using a random seed (the random device and the seed are computed only once every run)
+// Otherwise, once the project is run, the shadow rays would be continuously recalculated, and no static shadows would be produced.
+std::random_device rd;
+unsigned seed = rd();
 
 // samples a segment light source
 // you should fill in the vectors position and color with the sampled position and color
 void sampleSegmentLight(const SegmentLight& segmentLight, glm::vec3& position, glm::vec3& color)
 {
-    // Generating a uniform random number in the interval [0; 1)
-    std::random_device rd;
-    std::default_random_engine engine(rd());
-    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-    float alpha = uniform(engine);
+    // Extracting the uniform random number (alpha) -> changing method signatures is not allowed
+    float alpha = position.x;
 
     // Computing the position coordinates (somewhere along the line-segment)
     float coordX = alpha * segmentLight.endpoint1.x + (1.0f - alpha) * segmentLight.endpoint0.x;
@@ -35,12 +37,9 @@ void sampleSegmentLight(const SegmentLight& segmentLight, glm::vec3& position, g
 // Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 13, Section 13.4.2, pp. 331-332
 void sampleParallelogramLight(const ParallelogramLight& parallelogramLight, glm::vec3& position, glm::vec3& color)
 {
-    // Generating two uniform random numbers in the interval [0; 1)
-    std::random_device rd;
-    std::default_random_engine engine(rd());
-    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-    float alpha = uniform(engine);
-    float beta = uniform(engine);
+    // Extracting the uniform random numbers (alpha, beta) -> changing method signatures is not allowed
+    float alpha = position.x;
+    float beta = color.x;
 
     // Computing the position coordinates (somewhere within the parallelogram)
     position = parallelogramLight.v0 + alpha * parallelogramLight.edge01 + beta * parallelogramLight.edge02;
@@ -137,17 +136,29 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
                 if (features.enableSoftShadow && features.enableHardShadow) {
 
-                    const int SAMPLE_COUNT = 20;
+                    const int SAMPLE_COUNT = 50;
 
                     glm::vec3 position = glm::vec3 { 0 };
                     glm::vec3 color = glm::vec3 { 0 };
 
+                    // Generating a uniform random number in the interval [0; 1)
+                    std::default_random_engine engine(seed);
+                    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
+
                     for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        glm::vec3 samplePosition = glm::vec3 { 0 };
+                        glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
                         glm::vec3 sampleColor = glm::vec3 { 0 };
 
-                        sampleSegmentLight(segmentLight, position, color);
+                        sampleSegmentLight(segmentLight, samplePosition, sampleColor);
+
+                        // Accumulating positions
+                        position += samplePosition;
+
+                        // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
+                        float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
+                        color += isVisible * sampleColor;
                     }
+                    // Computing averages for position and color
                     position /= SAMPLE_COUNT;
                     color /= SAMPLE_COUNT;
 
@@ -161,17 +172,29 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
                 if (features.enableSoftShadow && features.enableHardShadow) {
 
-                    const int SAMPLE_COUNT = 20;
+                    const int SAMPLE_COUNT = 50;
 
                     glm::vec3 position = glm::vec3 { 0 };
                     glm::vec3 color = glm::vec3 { 0 };
 
-                    for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        glm::vec3 samplePosition = glm::vec3 { 0 };
-                        glm::vec3 sampleColor = glm::vec3 { 0 };
+                    // Generating two uniform random numbers in the interval [0; 1)
+                    std::default_random_engine engine(seed);
+                    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
 
-                        sampleParallelogramLight(parallelogramLight, position, color);
+                    for (int i = 0; i < SAMPLE_COUNT; i++) {
+                        glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
+                        glm::vec3 sampleColor = glm::vec3 { uniform(engine) };
+
+                        sampleParallelogramLight(parallelogramLight, samplePosition, sampleColor);
+
+                        // Accumulating positions
+                        position += samplePosition;
+
+                        // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
+                        float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
+                        color += isVisible * sampleColor;
                     }
+                    // Computing averages for position and color
                     position /= SAMPLE_COUNT;
                     color /= SAMPLE_COUNT;
 
