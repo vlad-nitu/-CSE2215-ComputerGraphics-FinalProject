@@ -81,7 +81,8 @@ const Ray computeReflectionRay(Ray ray, HitInfo hitInfo) {
 
     const float ERR = 1e-5;
     Ray reflectionRay { point + ERR * normalized_R, normalized_R, std::numeric_limits<float>::max() };
-    if (drawReflectionDebug)
-        drawRay(reflectionRay, glm::vec3{0, 0, 1});
+    if (drawReflectionDebug) {
+        drawRay({ reflectionRay.origin, reflectionRay.direction, 0.3f }, glm::vec3 { 0, 0, 1 });
+    }
     return reflectionRay;
 }

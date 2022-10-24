@@ -7,8 +7,12 @@
 #include <glm/glm.hpp>
 #include <queue>
 
+// Draw the debug for the interpolated normals
 bool drawNormalInterpolationDebug = false;
+
+// Draw the debug for BVH traversal
 bool rayNodeIntersectionDebug = false;
+bool drawUnvisited = false;
 
 /*
 void BoundingVolumeHierarchy::computeAABB(Node& node)
@@ -602,13 +606,14 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         int hitIndex = -1;
 
         if (hit) {
-            Trav root = { ray.t, nodes.size() - 1 };
-            queue.push(root);
+            queue.push({ray.t, (int)(nodes.size() - 1)}); // Push root to queue
             ray.t = oldT;
 
             // For debug draw root's AABB if intersected
             if (rayNodeIntersectionDebug)
                 drawAABB(AxisAlignedBox { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper }, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+
+            std::vector<int> unvisited;
 
             while (queue.size() > 0) {
                 Trav current = queue.top();
@@ -679,6 +684,13 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                             queue.push(rightChild);
                                     }
                                 }
+                            } else {
+                                /*
+                                * The node has been intersected but since it's farther than the current best 
+                                * primitive intersection we have no reason to visit it.
+                                */
+
+                                unvisited.push_back(other.NodeIndex); 
                             }
                         }
 
@@ -686,6 +698,10 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                         if (rayNodeIntersectionDebug || drawNormalInterpolationDebug)
                             drawPrimitive(hitIndex, ray, features, hitInfo);
 
+                        if (drawUnvisited) {
+                            for (const auto unvisitedIndex : unvisited)
+                                drawAABB({ nodes[unvisitedIndex].lower, nodes[unvisitedIndex].upper }, DrawMode::Wireframe, glm::vec3 { 1.0f, 0.45f, 0.1f }, 0.4f);
+                        }
 
                         return true;
                     }
