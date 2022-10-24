@@ -606,8 +606,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         int hitIndex = -1;
 
         if (hit) {
-            Trav root = { ray.t, nodes.size() - 1 };
-            queue.push(root);
+            queue.push({ray.t, (int)(nodes.size() - 1)}); // Push root to queue
             ray.t = oldT;
 
             // For debug draw root's AABB if intersected

@@ -229,13 +229,14 @@ int main(int argc, char** argv)
                     ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
 
                     ImGui::Checkbox("Show intersected but not visited", &showUnvisited);
-                    if (showUnvisited)
+                    if (showUnvisited) {
                         if (config.features.enableRecursive)
                             ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, max_ray_depth + 1);
                         else {
                             traversalDebugDepth = 1;
                             ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, 1);
                         }
+                    }
                 }
 
                 if (config.features.enableNormalInterp) {

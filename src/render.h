@@ -16,7 +16,7 @@ struct Features;
 // Change the color of the ray according to Phong Shading model
 extern bool drawDebugShading;
 
-// Change the maximul allowed ray depth
+// Change the maximum allowed ray depth
 extern int max_ray_depth;
 
 // The level in the recursion tree of which to show the intersected but unvisited nodes of the BVH
