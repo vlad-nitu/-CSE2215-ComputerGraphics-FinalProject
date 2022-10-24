@@ -178,8 +178,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& 
     }
 }
 
-BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
-    : m_pScene(pScene)
+BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)    : m_pScene(pScene)
 {
     m_numLeaves = 1;
     m_numLevels = 1;
