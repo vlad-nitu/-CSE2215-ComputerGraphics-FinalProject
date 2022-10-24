@@ -136,7 +136,7 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Shading", &config.features.enableShading);
                 ImGui::Checkbox("Recursive(reflections)", &config.features.enableRecursive);
                 if (config.features.enableRecursive) {
-                    ImGui::SliderInt("Ray depth", &ray_depth, 0, 10);
+                    ImGui::SliderInt("Number of reflections", &max_ray_depth, 1, 10);
                 }
 
                 ImGui::Checkbox("Hard shadows", &config.features.enableHardShadow);
@@ -227,6 +227,15 @@ int main(int argc, char** argv)
                     ImGui::Text("BVH Traversal");
 
                     ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
+
+                    ImGui::Checkbox("Show intersected but not visited", &showUnvisited);
+                    if (showUnvisited)
+                        if (config.features.enableRecursive)
+                            ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, max_ray_depth + 1);
+                        else {
+                            traversalDebugDepth = 1;
+                            ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, 1);
+                        }
                 }
 
                 if (config.features.enableNormalInterp) {

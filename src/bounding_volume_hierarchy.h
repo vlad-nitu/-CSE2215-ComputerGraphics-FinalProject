@@ -8,7 +8,9 @@
 struct Scene;
 
 extern bool drawNormalInterpolationDebug;
+
 extern bool rayNodeIntersectionDebug;
+extern bool drawUnvisited;
 
 struct Node {
     bool isLeaf; // false for interior node and true for leafs.
