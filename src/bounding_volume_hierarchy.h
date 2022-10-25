@@ -71,7 +71,7 @@ private:
 
     bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
 
-    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
+    bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.

@@ -397,7 +397,7 @@ bool BoundingVolumeHierarchy::isInAABB(Ray& ray, AxisAlignedBox& aabb) const
 /// <param name="features"> Struct containg info about features </param>
 /// <param name="bestPrimitiveIndex"> The index of the curently intersected primitive. Is to be updated if a closer to the origin of the ray one is found </param>
 /// <returns> True if an intersection happens, false otherwise </returns>
-bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const
+bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const
 {
     bool hit = false;
 
@@ -451,7 +451,7 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
 
         } else {
             // Get the triangle from the coresponding mesh
-            glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
+            glm::uvec3& tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
             // Get the vertices coordinates of the triangle
             auto& v0 = m_pScene->meshes[mesh].vertices[tri[0]];
@@ -636,7 +636,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 Trav current = queue.top();
                 queue.pop();
 
-                Node node = nodes[current.NodeIndex];
+                const Node& node = nodes[current.NodeIndex];
 
                 // If node is leaf test its primitives, otherwise test its children
                 if (node.isLeaf) {
@@ -650,7 +650,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                             // The current AABB has potentian for a better hit
                             if (other.t <= ray.t) {
-                                Node otherNode = nodes[other.NodeIndex];
+                                const Node& otherNode = nodes[other.NodeIndex];
 
                                 if (otherNode.isLeaf) {
                                     // If the node is a leaf then test its intersection
