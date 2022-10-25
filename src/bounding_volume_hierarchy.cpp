@@ -76,7 +76,7 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 
     // Check if the primitive is a sphere or a triangle
     if (m_pScene->meshes.size() <= mesh) {
-        Sphere sphere = m_pScene->spheres[primitiveIndex];
+        Sphere& sphere = m_pScene->spheres[primitiveIndex];
 
         // Computer the maximum and minimum coordinates of the sphere
         glm::vec3 sphereMin = sphere.center - glm::vec3 { sphere.radius };
@@ -90,9 +90,9 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
         glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
         // Get the vertices coordinates of the triangle
-        glm::vec3 v0 = m_pScene->meshes[mesh].vertices[tri[0]].position;
-        glm::vec3 v1 = m_pScene->meshes[mesh].vertices[tri[1]].position;
-        glm::vec3 v2 = m_pScene->meshes[mesh].vertices[tri[2]].position;
+        glm::vec3& v0 = m_pScene->meshes[mesh].vertices[tri[0]].position;
+        glm::vec3& v1 = m_pScene->meshes[mesh].vertices[tri[1]].position;
+        glm::vec3& v2 = m_pScene->meshes[mesh].vertices[tri[2]].position;
 
         // Update the max and min values coordinate-wise
         low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
@@ -402,9 +402,18 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
     bool hit = false;
 
     // Storing information about the best triangle intersection
-    Vertex bestV0 = m_pScene->meshes[0].vertices[0];
-    Vertex bestV1 = m_pScene->meshes[0].vertices[0];
-    Vertex bestV2 = m_pScene->meshes[0].vertices[0];
+    Vertex bestV0;
+    Vertex bestV1;
+    Vertex bestV2;
+    if (m_pScene->meshes.size() > 0) {
+        bestV0 = m_pScene->meshes[0].vertices[0];
+        bestV1 = m_pScene->meshes[0].vertices[0];
+        bestV2 = m_pScene->meshes[0].vertices[0];
+    } else {
+        bestV0 = Vertex();
+        bestV1 = Vertex();
+        bestV2 = Vertex();
+    }
     float bestTriangleT = ray.t;
     int bestTriangleIndex = -1;
 
@@ -445,9 +454,9 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
             glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
             // Get the vertices coordinates of the triangle
-            auto v0 = m_pScene->meshes[mesh].vertices[tri[0]];
-            auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
-            auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
+            auto& v0 = m_pScene->meshes[mesh].vertices[tri[0]];
+            auto& v1 = m_pScene->meshes[mesh].vertices[tri[1]];
+            auto& v2 = m_pScene->meshes[mesh].vertices[tri[2]];
 
             float oldT = ray.t;
             if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
@@ -508,9 +517,18 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
     if (!features.enableAccelStructure) {
         bool hit = false;
 
-        Vertex bestV0 = m_pScene->meshes[0].vertices[0];
-        Vertex bestV1 = m_pScene->meshes[0].vertices[0];
-        Vertex bestV2 = m_pScene->meshes[0].vertices[0];
+        Vertex bestV0;
+        Vertex bestV1;
+        Vertex bestV2;
+        if (m_pScene->meshes.size() > 0) {
+            bestV0 = m_pScene->meshes[0].vertices[0];
+            bestV1 = m_pScene->meshes[0].vertices[0];
+            bestV2 = m_pScene->meshes[0].vertices[0];
+        } else {
+            bestV0 = Vertex();
+            bestV1 = Vertex();
+            bestV2 = Vertex();
+        }
         float bestTriangleT = ray.t;
 
         Sphere bestSphere;
