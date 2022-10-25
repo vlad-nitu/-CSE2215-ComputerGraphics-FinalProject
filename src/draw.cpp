@@ -211,3 +211,12 @@ void drawRay(const Ray& ray, const glm::vec3& color)
 
     glPopAttrib();
 }
+
+void drawSphereCustom(float radius, glm::vec3& color) { 
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glColor3fv(glm::value_ptr(color));
+    GLUquadric* quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_LINE);
+    gluSphere(quadric, radius, 32, 24);
+    glPopAttrib();
+}

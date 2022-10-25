@@ -51,20 +51,25 @@ std::vector<Image> createImages(const Image& image) {
 
 void debugDrawMipMapLevel(int level) { 
 
-    glm::vec3 curr_lower {- (2 *level), - (2 * level), - (2 * level)};
-    glm::vec3 curr_upper {(2 * level), (2 * level), (2 * level)};
+    glm::vec3 center{0,0,0}; 
 
-    if (level == 0) {
-        drawAABB({curr_lower, curr_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
-    }
-    else { 
-    glm::vec3 prev_lower {-(2 * (level+1)), -(2 * (level+1)), -(2 * (level+1))};
-    glm::vec3 prev_upper {(2 * (level+1)), (2 * (level+1)), (2 * (level+1))};
+    // glm::vec3 curr_lower {- (2 *level), - (2 * level), - (2 * level)};
+    // glm::vec3 curr_upper {(2 * level), (2 * level), (2 * level)};
 
-        drawAABB({prev_lower, prev_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
-        drawAABB({curr_lower, curr_upper}, DrawMode::Filled, glm::vec3{1,0,0}, 0.4f);
+    //     glm::vec3 prev_lower {curr_lower -  glm::vec3{2 * sqrt(3), 2 * sqrt(3), 2 * sqrt(3)} };
+    //     glm::vec3 prev_upper {curr_upper + glm::vec3{2 * sqrt(3), 2 * sqrt(3), 2 * sqrt(3)} };
 
-    }
+    //     drawAABB({prev_lower, prev_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
+    //     drawAABB({curr_lower, curr_upper}, DrawMode::Filled, glm::vec3{1,0,0}, 0.4f);
+        
+        // drawSphere(center, 2 * level, glm::vec3{0,1,0});
+        // drawSphere(center, 2 * (level + 1),glm::vec3{1,0,0});
+
+        glm::vec3 RED {1.0f, 0.0f, 0.0f}; 
+        glm::vec3 GREEN {0.0f, 1.0f, 0.0f}; 
+        drawSphereCustom(2 * level, RED); 
+        drawSphereCustom(2 * (level + 1), GREEN); 
+
 } 
 
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level)
