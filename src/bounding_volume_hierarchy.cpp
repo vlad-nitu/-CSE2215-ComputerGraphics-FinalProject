@@ -198,9 +198,9 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     int primitiveIndex = 0;
     for (const auto& mesh : m_pScene->meshes) {
         for (const auto& tri : mesh.triangles) {
-            const auto v0 = mesh.vertices[tri[0]].position;
-            const auto v1 = mesh.vertices[tri[1]].position;
-            const auto v2 = mesh.vertices[tri[2]].position;
+            const auto& v0 = mesh.vertices[tri[0]].position;
+            const auto& v1 = mesh.vertices[tri[1]].position;
+            const auto& v2 = mesh.vertices[tri[2]].position;
 
             // Compute centroids
             glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
@@ -250,7 +250,7 @@ int BoundingVolumeHierarchy::numLeaves() const
     return m_numLeaves;
 }
 
-void BoundingVolumeHierarchy::showLevel(Node& node, int currentLevel, int targetLevel)
+void BoundingVolumeHierarchy::showLevel(const Node& node, int currentLevel, int targetLevel)
 {
     if (currentLevel == targetLevel) {
         AxisAlignedBox aabb { node.lower, node.upper };
@@ -275,7 +275,7 @@ void BoundingVolumeHierarchy::debugDrawLevel(int level)
 
 void BoundingVolumeHierarchy::getLeaf(int index, int& leafIdx, int& result)
 {
-    Node node = nodes[index];
+    Node& node = nodes[index];
 
     if (node.isLeaf) {
         if (leafIdx == 0)
@@ -314,7 +314,7 @@ void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
 
         // Check if the primitive is a sphere or a triangle
         if (m_pScene->meshes.size() <= mesh) {
-            Sphere sphere = m_pScene->spheres[primitiveIndex];
+            Sphere& sphere = m_pScene->spheres[primitiveIndex];
 
             drawSphere(sphere);
         } else {
@@ -322,9 +322,9 @@ void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
             glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
             // Get the vertices coordinates of the triangle
-            auto v0 = m_pScene->meshes[mesh].vertices[tri[0]];
-            auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
-            auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
+            auto& v0 = m_pScene->meshes[mesh].vertices[tri[0]];
+            auto& v1 = m_pScene->meshes[mesh].vertices[tri[1]];
+            auto& v2 = m_pScene->meshes[mesh].vertices[tri[2]];
 
             drawTriangle(v0, v1, v2, glm::vec3 { 1.0f, 0.2f, 0.6f });
         }
@@ -347,7 +347,7 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
 
     // Check if the primitive is a sphere or a triangle
     if (m_pScene->meshes.size() <= mesh) {
-        Sphere sphere = m_pScene->spheres[primitiveIndex];
+        Sphere& sphere = m_pScene->spheres[primitiveIndex];
 
         if (rayNodeIntersectionDebug)
             drawSphere(sphere);
@@ -357,9 +357,9 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
         glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
         // Get the vertices coordinates of the triangle
-        auto v0 = m_pScene->meshes[mesh].vertices[tri[0]];
-        auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
-        auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
+        auto& v0 = m_pScene->meshes[mesh].vertices[tri[0]];
+        auto& v1 = m_pScene->meshes[mesh].vertices[tri[1]];
+        auto& v2 = m_pScene->meshes[mesh].vertices[tri[2]];
 
         if (rayNodeIntersectionDebug)
             drawTriangle(v0, v1, v2, glm::vec3 { 1.0f, 0.2f, 0.6f });

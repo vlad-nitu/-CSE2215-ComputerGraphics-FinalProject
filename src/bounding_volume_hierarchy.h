@@ -63,7 +63,7 @@ private:
 
     void subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth);
 
-    void showLevel(Node& node, int currentLevel, int targetLevel);
+    void showLevel(const Node& node, int currentLevel, int targetLevel);
 
     void getLeaf(int index, int& leafIdx, int& result);
 
