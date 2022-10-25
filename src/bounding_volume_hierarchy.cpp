@@ -469,7 +469,7 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
 
                     hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
 
-                    if (features.enableTextureMapping) {
+                    if (features.enableTextureMapping || features.extra.enableMipmapTextureFiltering) {
                         hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
                     }
                 } else {
@@ -545,7 +545,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                         hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
 
                         // Check if textures are turned on
-                        if (features.enableTextureMapping) {
+                        if (features.enableTextureMapping || features.extra.enableMipmapTextureFiltering) {
                             hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
                         }
 
