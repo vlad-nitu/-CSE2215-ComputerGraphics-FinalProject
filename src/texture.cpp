@@ -58,11 +58,11 @@ void debugDrawMipMapLevel(int level) {
         drawAABB({curr_lower, curr_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
     }
     else { 
-    glm::vec3 prev_lower {-(2 * (level-1)), -(2 * (level-1)), -(2 * (level-1))};
-    glm::vec3 prev_upper {(2 * (level-1)), (2 * (level-1)), (2 * (level-1))};
+    glm::vec3 prev_lower {-(2 * (level+1)), -(2 * (level+1)), -(2 * (level+1))};
+    glm::vec3 prev_upper {(2 * (level+1)), (2 * (level+1)), (2 * (level+1))};
 
-        drawAABB({prev_lower, prev_upper}, DrawMode::Filled, glm::vec3{0.2,0,0}, 0.1f);
-        drawAABB({curr_lower, curr_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
+        drawAABB({prev_lower, prev_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
+        drawAABB({curr_lower, curr_upper}, DrawMode::Filled, glm::vec3{1,0,0}, 0.4f);
 
     }
 } 
@@ -85,7 +85,7 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
                 level = mipmap_max_depth;
             img = images[level];
 
-            debugDrawMipMapLevel(level); 
+             debugDrawMipMapLevel(level); 
         }
 
     int col = texCoord.x * img.width; // Convert to int so values are rounded down representing the line

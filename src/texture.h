@@ -10,7 +10,6 @@ DISABLE_WARNINGS_POP()
 // Forward declarations.
 struct Image;
 
-
 // Given an image and a texture coordinate, return the corresponding texel.
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level);
 int getMipMapLevel(int h);
