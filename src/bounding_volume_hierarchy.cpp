@@ -70,7 +70,7 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 {
     // Find the mesh which contains this triangle
     int mesh = 0;
-    while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+    while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
         primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
     }
 
@@ -308,7 +308,7 @@ void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
 
         // Find the mesh which contains this triangle
         int mesh = 0;
-        while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+        while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
             primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
         }
 
@@ -341,7 +341,7 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
 {
     // Find the mesh which contains this triangle
     int mesh = 0;
-    while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+    while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
         primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
     }
 
@@ -423,7 +423,7 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
 
         // Find the mesh which contains this triangle
         int mesh = 0;
-        while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+        while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
             primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
         }
 
