@@ -2,24 +2,26 @@
 #include <framework/image.h>
 #include <vector> 
 #include <algorithm>
+#include <cmath>
 
-std::vector<Image> images; 
-int mipmap_max_depth;
+int mipmap_max_depth = 0;
+
 /*
 Create MipMap w/ 5 levels, where initial_image is on level 0 (root) 
 */
-void createImages(const Image& image) { 
+std::vector<Image> createImages(const Image& image) { 
 
-    images.push_back(image);
-    for (int lvl = 1; lvl <= mipmap_max_depth; ++lvl){ 
+    std::vector<Image> images{};
+    images.push_back(image); 
+    for (int lvl = 1; lvl <= mipmap_max_depth; ++lvl) { 
 
         const Image& prev_image = images.back(); 
 
         int prev_w = prev_image.width;
         int prev_h = prev_image.height;
 
-        int new_w = prev_image.width / 2;
-        int new_h = prev_image.height / 2;
+        int new_w = prev_w / 2;
+        int new_h = prev_h / 2;
 
 
         std::vector<glm::vec3> new_pixels {}; 
@@ -43,19 +45,9 @@ void createImages(const Image& image) {
         Image new_image = Image(new_w, new_h, new_pixels);
         images.push_back(new_image);
     }
-    return;
-
+    return images;
 }
 
-int getMipMapLevel(int h) { // compute log2 of h; guaranted to be power of 4 and w = h 
-    int level = 0;
-    while (h > 1)
-    {
-        h /= 2;
-        level ++;
-    }
-    return level;
-}
 
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level)
 {
@@ -69,13 +61,10 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
 
     if (features.extra.enableMipmapTextureFiltering)
         {
-            if (images.empty()) {
-            mipmap_max_depth = getMipMapLevel(image.height);
-            // printf("%d\n", mipmap_max_depth);
-            // printf("%d\n", image.height);
-             createImages(image);
-            } 
-
+            mipmap_max_depth = std::log2(img.height);
+            std::vector<Image> images = createImages(image);
+            if (level > mipmap_max_depth)
+                level = mipmap_max_depth;
             img = images[level];
         }
 

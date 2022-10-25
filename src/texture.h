@@ -14,4 +14,4 @@ struct Image;
 // Given an image and a texture coordinate, return the corresponding texel.
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level);
 int getMipMapLevel(int h);
-void createImages(const Image& image);
+std::vector<Image> createImages(const Image& image);

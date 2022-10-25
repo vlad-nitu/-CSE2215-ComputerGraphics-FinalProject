@@ -15,7 +15,7 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
     if (features.extra.enableMipmapTextureFiltering){
-            int level = glm::min(ray.t / 2, 5.0f); // at most 5 levels
+            int level = ray.t / 2; 
             glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, level);
 
             if (features.enableTextureMapping && hitInfo.material.kdTexture)
