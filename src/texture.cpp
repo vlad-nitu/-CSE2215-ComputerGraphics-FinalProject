@@ -3,6 +3,7 @@
 #include <vector> 
 #include <algorithm>
 #include <cmath>
+#include "draw.h"
 
 int mipmap_max_depth = 0;
 
@@ -48,6 +49,23 @@ std::vector<Image> createImages(const Image& image) {
     return images;
 }
 
+void debugDrawMipMapLevel(int level) { 
+
+    glm::vec3 curr_lower {- (2 *level), - (2 * level), - (2 * level)};
+    glm::vec3 curr_upper {(2 * level), (2 * level), (2 * level)};
+
+    if (level == 0) {
+        drawAABB({curr_lower, curr_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
+    }
+    else { 
+    glm::vec3 prev_lower {-(2 * (level-1)), -(2 * (level-1)), -(2 * (level-1))};
+    glm::vec3 prev_upper {(2 * (level-1)), (2 * (level-1)), (2 * (level-1))};
+
+        drawAABB({prev_lower, prev_upper}, DrawMode::Filled, glm::vec3{0.2,0,0}, 0.1f);
+        drawAABB({curr_lower, curr_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
+
+    }
+} 
 
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level)
 {
@@ -66,6 +84,8 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
             if (level > mipmap_max_depth)
                 level = mipmap_max_depth;
             img = images[level];
+
+            debugDrawMipMapLevel(level); 
         }
 
     int col = texCoord.x * img.width; // Convert to int so values are rounded down representing the line
