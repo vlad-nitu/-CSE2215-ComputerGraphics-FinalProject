@@ -477,14 +477,14 @@ bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo
                     hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord);
 
                     hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
-
-                    if (features.enableTextureMapping) {
-                        hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
-                    }
                 } else {
                     glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
                     hitInfo.normal = (glm::dot(ray.direction, normal) > 0) ? -normal : normal;
+                }
+
+                if (features.enableTextureMapping) {
+                    hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
                 }
 
                 hitInfo.material = m_pScene->meshes[mesh].material;
@@ -562,15 +562,14 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                         hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
 
-                        // Check if textures are turned on
-                        if (features.enableTextureMapping) {
-                            hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
-                        }
-
                     } else {
                         glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
                         hitInfo.normal = (glm::dot(ray.direction, normal) > 0) ? -normal : normal;
+                    }
+
+                    if (features.enableTextureMapping) {
+                        hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
                     }
 
                     hitInfo.material = mesh.material;
