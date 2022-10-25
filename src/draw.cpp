@@ -217,6 +217,6 @@ void drawSphereCustom(float radius, glm::vec3& color) {
     glColor3fv(glm::value_ptr(color));
     GLUquadric* quadric = gluNewQuadric();
     gluQuadricDrawStyle(quadric, GLU_LINE);
-    gluSphere(quadric, radius, 32, 24);
+    gluSphere(quadric, radius, 24, 24);
     glPopAttrib();
 }
