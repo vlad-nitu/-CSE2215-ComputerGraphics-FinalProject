@@ -42,7 +42,6 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
             Ray reflection = computeReflectionRay(ray, hitInfo);
 
             if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 } && rayDepth <= max_ray_depth) {
-                float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
                 Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
             }
         }

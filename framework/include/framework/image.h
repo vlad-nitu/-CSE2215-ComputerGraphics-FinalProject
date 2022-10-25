@@ -11,6 +11,7 @@ DISABLE_WARNINGS_POP()
 struct Image {
 public:
     explicit Image(const std::filesystem::path& filePath);
+    Image(int width, int height, std::vector<glm::vec3> pixels) : width(width), height(height), pixels(pixels){}
 
 public:
     int width, height;

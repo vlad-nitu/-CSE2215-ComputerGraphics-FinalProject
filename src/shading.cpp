@@ -8,14 +8,24 @@ bool drawReflectionDebug = false;
 
 const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& lightColor, const Features& features, Ray ray, HitInfo hitInfo)
 {
+    
     glm::vec3 postion = ray.origin + ray.t * ray.direction;
 
     glm::vec3 surfaceLightVector = glm::normalize(lightPosition - postion);
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
-    if (features.enableTextureMapping && hitInfo.material.kdTexture) {
-        glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
+    if (features.extra.enableMipmapTextureFiltering){
+            int level = glm::min(ray.t / 2, 5.0f); // at most 5 levels
+            glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, level);
 
+            if (features.enableTextureMapping && hitInfo.material.kdTexture)
+                return lightColor * kd * dotProduct;
+            else 
+                return lightColor * hitInfo.material.kd * dotProduct;
+    }
+
+    if (features.enableTextureMapping && hitInfo.material.kdTexture) {
+        glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, 0);
         return lightColor * kd * dotProduct;
     } else {
         return lightColor * hitInfo.material.kd * dotProduct;
@@ -61,7 +71,7 @@ computeShading(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, cons
         return shading;
     } else {
         if (features.enableTextureMapping) {
-            return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
+            return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, 0);
         } else {
             return hitInfo.material.kd;
         }
