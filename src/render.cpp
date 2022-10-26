@@ -39,11 +39,40 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
 
         if (features.enableRecursive) {
-            Ray reflection = computeReflectionRay(ray, hitInfo);
 
-            if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 } && rayDepth <= max_ray_depth) {
-                float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
-                Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+            // Check if we reached the maximum depth
+            if (rayDepth <= max_ray_depth) {
+
+                // Chech if the transparency feature is enabled
+                if (features.extra.enableTransparency) {
+
+                    float transparency = hitInfo.material.transparency;
+
+                    // Check if material can reflec light
+                    if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 }) {
+                        Ray reflection = computeReflectionRay(ray, hitInfo);
+
+                        float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
+                        Lo += transparency * hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+                    }
+
+                    // Check if material is transparent
+                    if (transparency < 1.0f) {
+                        Ray refraction = computeRefractedRay(ray, hitInfo);
+
+                        Lo += (1.0f - transparency) * getFinalColor(scene, bvh, refraction, features, rayDepth + 1);
+                    }
+
+                } else {
+
+                    // Perform normal recursive raytracing
+                    if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 }) {
+                        Ray reflection = computeReflectionRay(ray, hitInfo);
+
+                        float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
+                        Lo += hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+                    }
+                }
             }
         }
 
