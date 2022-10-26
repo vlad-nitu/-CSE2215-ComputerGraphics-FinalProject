@@ -618,11 +618,18 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         std::priority_queue<Trav, std::vector<Trav>, decltype(my_comp)> queue(my_comp); // Create priority queue
 
         float oldT = ray.t;
-        bool hit = intersectRayWithShape(AxisAlignedBox { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper }, ray);
+        AxisAlignedBox rootAABB = { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper };
+        bool hit = intersectRayWithShape(rootAABB, ray);
+
+        hit |= isInAABB(ray, rootAABB);
+        
         int hitIndex = -1;
 
         if (hit) {
-            queue.push({ray.t, (int)(nodes.size() - 1)}); // Push root to queue
+            if (isInAABB(ray, rootAABB))
+                queue.push({ 0, (int)(nodes.size() - 1) });
+            else
+                queue.push({ray.t, (int)(nodes.size() - 1)}); // Push root to queue
             ray.t = oldT;
 
             // For debug draw root's AABB if intersected
