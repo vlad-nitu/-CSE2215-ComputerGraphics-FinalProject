@@ -25,7 +25,7 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     }
 
     if (features.enableTextureMapping && hitInfo.material.kdTexture) {
-        glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, 0);
+        glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features); 
         return lightColor * kd * dotProduct;
     } else {
         return lightColor * hitInfo.material.kd * dotProduct;
@@ -71,7 +71,7 @@ computeShading(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, cons
         return shading;
     } else {
         if (features.enableTextureMapping) {
-            return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, 0);
+            return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
         } else {
             return hitInfo.material.kd;
         }
