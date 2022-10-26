@@ -1,8 +1,8 @@
+#include "draw.h"
 #include "texture.h"
 #include <cmath>
 #include <glm/geometric.hpp>
 #include <shading.h>
-#include "draw.h"
 
 bool drawReflectionDebug = false;
 
@@ -22,18 +22,18 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     }
 }
 
-const glm::vec3
-computeSpecular(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, const Features &features, Ray ray,
-                HitInfo hitInfo) {
+const glm::vec3 computeSpecular(const glm::vec3& lightPosition, const glm::vec3& lightColor, const Features& features, Ray ray,
+    HitInfo hitInfo)
+{
     glm::vec3 position = ray.origin + ray.t * ray.direction;
 
     if (glm::dot(hitInfo.normal, lightPosition - position) <= 0) {
-        return glm::vec3{0};
+        return glm::vec3 { 0 };
     } else {
         glm::vec3 lightRay = glm::normalize(position - lightPosition); // From light to point
 
         glm::vec3 reflection = glm::normalize(
-                lightRay - 2 * glm::dot(hitInfo.normal, lightRay) * hitInfo.normal); // from point to infinity
+            lightRay - 2 * glm::dot(hitInfo.normal, lightRay) * hitInfo.normal); // from point to infinity
         glm::vec3 viewDirection = glm::normalize(ray.origin - position); // from point to camera
 
         float incomingLightCoeff = glm::dot(reflection, viewDirection);
@@ -44,14 +44,14 @@ computeSpecular(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, con
 
             return result;
         } else {
-            return glm::vec3{0};
+            return glm::vec3 { 0 };
         }
     }
 }
 
-const glm::vec3
-computeShading(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, const Features &features, Ray ray,
-               HitInfo hitInfo) {
+const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& lightColor, const Features& features, Ray ray,
+    HitInfo hitInfo)
+{
     if (features.enableShading) {
         glm::vec3 diffuse = computeDiffuse(lightPosition, lightColor, features, ray, hitInfo);
         glm::vec3 specular = computeSpecular(lightPosition, lightColor, features, ray, hitInfo);
@@ -60,7 +60,7 @@ computeShading(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, cons
 
         return shading;
     } else {
-        if (features.enableTextureMapping) {
+        if (features.enableTextureMapping && hitInfo.material.kdTexture) {
             return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
         } else {
             return hitInfo.material.kd;
@@ -68,8 +68,8 @@ computeShading(const glm::vec3 &lightPosition, const glm::vec3 &lightColor, cons
     }
 }
 
-
-const Ray computeReflectionRay(Ray ray, HitInfo hitInfo) {
+const Ray computeReflectionRay(Ray ray, HitInfo hitInfo)
+{
     glm::vec3 point = ray.origin + ray.t * ray.direction;
 
     glm::vec3 N = hitInfo.normal;
