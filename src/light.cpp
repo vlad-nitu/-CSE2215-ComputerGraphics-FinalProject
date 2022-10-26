@@ -54,28 +54,24 @@ void sampleParallelogramLight(const ParallelogramLight& parallelogramLight, glm:
 // Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 4, Section 4.7, pp. 86-87
 float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& debugColor, const BvhInterface& bvh, const Features& features, Ray ray, HitInfo hitInfo)
 {
-    if (features.enableHardShadow) {
-        glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
-        glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
-        float tLight = glm::distance(samplePos, currentPoint);
+    glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
+    glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
+    float tLight = glm::distance(samplePos, currentPoint);
 
-        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, std::numeric_limits<float>::max() };
-        if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
-            if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
-                if (drawShadowRayDebug)
-                    drawRay(pointTowardsLight, debugColor);
-                return 1.0f;
-            } else {
-                if (drawShadowRayDebug)
-                    drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
-                return 0.0f;
-            }
-        } else {
+    Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, std::numeric_limits<float>::max() };
+    if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
+        if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
             if (drawShadowRayDebug)
                 drawRay(pointTowardsLight, debugColor);
             return 1.0f;
+        } else {
+            if (drawShadowRayDebug)
+                drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
+            return 0.0f;
         }
     } else {
+        if (drawShadowRayDebug)
+            drawRay(pointTowardsLight, debugColor);
         return 1.0f;
     }
 }
@@ -134,9 +130,9 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             } else if (std::holds_alternative<SegmentLight>(light)) {
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
-                if (features.enableSoftShadow && features.enableHardShadow) {
+                if (features.enableSoftShadow) {
 
-                    const int SAMPLE_COUNT = 50;
+                    const int SAMPLE_COUNT = 20;
 
                     glm::vec3 position = glm::vec3 { 0 };
                     glm::vec3 color = glm::vec3 { 0 };
@@ -162,17 +158,15 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                     position /= SAMPLE_COUNT;
                     color /= SAMPLE_COUNT;
 
-                    float lightContribution = testVisibilityLightSample(position, color, bvh, features, ray, hitInfo);
-
-                    result += computeShading(position, color, features, ray, hitInfo) * lightContribution;
+                    result += computeShading(position, color, features, ray, hitInfo);
                 }
 
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
-                if (features.enableSoftShadow && features.enableHardShadow) {
+                if (features.enableSoftShadow) {
 
-                    const int SAMPLE_COUNT = 50;
+                    const int SAMPLE_COUNT = 40;
 
                     glm::vec3 position = glm::vec3 { 0 };
                     glm::vec3 color = glm::vec3 { 0 };
@@ -198,14 +192,11 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                     position /= SAMPLE_COUNT;
                     color /= SAMPLE_COUNT;
 
-                    float lightContribution = testVisibilityLightSample(position, color, bvh, features, ray, hitInfo);
-
-                    result += computeShading(position, color, features, ray, hitInfo) * lightContribution;
-                } 
-
+                    result += computeShading(position, color, features, ray, hitInfo);
+                }
             }
         }
-        //return hitInfo.material.kd;
+        // return hitInfo.material.kd;
         return result;
 
     } else {

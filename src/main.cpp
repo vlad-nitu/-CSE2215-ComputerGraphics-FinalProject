@@ -208,7 +208,7 @@ int main(int argc, char** argv)
                     ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
                 }
 
-                if (config.features.enableHardShadow) {
+                if (config.features.enableHardShadow || config.features.enableSoftShadow) {
                     ImGui::Text("Hard (and soft) shadows");
                     ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
                 }
