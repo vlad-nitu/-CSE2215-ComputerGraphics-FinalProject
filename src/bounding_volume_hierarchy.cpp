@@ -109,7 +109,7 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 /// <param name="depth"> The depth of the given node. </param>
 void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth)
 {
-    //computeAABB(node);
+    // computeAABB(node);
 
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
@@ -178,7 +178,8 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& 
     }
 }
 
-BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)    : m_pScene(pScene)
+BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)
+    : m_pScene(pScene)
 {
     m_numLeaves = 1;
     m_numLevels = 1;
@@ -383,9 +384,7 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
 /// <returns> True if the origin of the ray is inside the given AABB, false otherwise</returns>
 bool BoundingVolumeHierarchy::isInAABB(Ray& ray, AxisAlignedBox& aabb) const
 {
-    return ((aabb.lower.x <= ray.origin.x && ray.origin.x <= aabb.upper.x) && 
-        (aabb.lower.y <= ray.origin.y && ray.origin.y <= aabb.upper.y) && 
-        (aabb.lower.z <= ray.origin.z && ray.origin.z <= aabb.upper.z));
+    return ((aabb.lower.x <= ray.origin.x && ray.origin.x <= aabb.upper.x) && (aabb.lower.y <= ray.origin.y && ray.origin.y <= aabb.upper.y) && (aabb.lower.z <= ray.origin.z && ray.origin.z <= aabb.upper.z));
 }
 
 /// <summary>
@@ -622,14 +621,14 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         bool hit = intersectRayWithShape(rootAABB, ray);
 
         hit |= isInAABB(ray, rootAABB);
-        
+
         int hitIndex = -1;
 
         if (hit) {
             if (isInAABB(ray, rootAABB))
                 queue.push({ 0, (int)(nodes.size() - 1) });
             else
-                queue.push({ray.t, (int)(nodes.size() - 1)}); // Push root to queue
+                queue.push({ ray.t, (int)(nodes.size() - 1) }); // Push root to queue
             ray.t = oldT;
 
             // For debug draw root's AABB if intersected
@@ -666,20 +665,22 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                     oldT = ray.t;
 
                                     // If ray intersects AABB put into queue
-                                    if (intersectRayWithShape(leftChildBox, ray)) {
-                                        Trav leftChild ;
-                                        if (isInAABB(ray, leftChildBox)) {
-                                            leftChild = { 0, otherNode.children[0] };
-                                        } else {
-                                            leftChild = { ray.t, otherNode.children[0] };
-                                        }
+                                    Trav leftChild;
+                                    if (isInAABB(ray, leftChildBox)) {
+                                        leftChild = { 0, otherNode.children[0] };
+                                        queue.push(leftChild);
+
+                                        // For debug draw intersected node's AABB
+                                        if (rayNodeIntersectionDebug)
+                                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                                    } else if (intersectRayWithShape(leftChildBox, ray)) {
+                                        leftChild = { ray.t, otherNode.children[0] };
                                         ray.t = oldT; // No need to remember the AABB intersection t
 
                                         // For debug draw intersected node's AABB
                                         if (rayNodeIntersectionDebug)
                                             drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
 
-                                        // Add children to the queue only if they show potential for a better hit
                                         if (leftChild.t <= ray.t)
                                             queue.push(leftChild);
                                     }
@@ -687,33 +688,32 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                     AxisAlignedBox rightChildBox = { nodes[otherNode.children[1]].lower, nodes[otherNode.children[1]].upper };
                                     oldT = ray.t;
 
-                                    // If ray intersects AABB put into queue
-                                    if (intersectRayWithShape(rightChildBox, ray)) {
-                                        Trav rightChild;
-                                        if (isInAABB(ray, rightChildBox)) {
-                                            rightChild = { 0, otherNode.children[1] };
-                                        }
-                                        else {
-                                            rightChild = { ray.t, otherNode.children[1] };
-                                        }
-                                        ray.t = oldT; // No need to remember the AABB intersection t
+                                    Trav rightChild;
+                                    if (isInAABB(ray, rightChildBox)) {
+                                        rightChild = { 0, otherNode.children[1] };
+                                        queue.push(rightChild);
 
                                         // For debug draw intersected node's AABB
                                         if (rayNodeIntersectionDebug)
                                             drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                                    } else if (intersectRayWithShape(rightChildBox, ray)) {
+                                        rightChild = { ray.t, otherNode.children[1] };
+                                        ray.t = oldT;
 
-                                        // Add children to the queue only if they show potential for a better hit
+                                        if (rayNodeIntersectionDebug)
+                                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+
                                         if (rightChild.t <= ray.t)
                                             queue.push(rightChild);
                                     }
                                 }
                             } else {
                                 /*
-                                * The node has been intersected but since it's farther than the current best 
-                                * primitive intersection we have no reason to visit it.
-                                */
+                                 * The node has been intersected but since it's farther than the current best
+                                 * primitive intersection we have no reason to visit it.
+                                 */
 
-                                unvisited.push_back(other.NodeIndex); 
+                                unvisited.push_back(other.NodeIndex);
                             }
                         }
 
@@ -733,20 +733,22 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                     oldT = ray.t;
 
                     // If ray intersects AABB put into queue
-                    if (intersectRayWithShape(leftChildBox, ray)) {
-                        Trav leftChild;
-                        if (isInAABB(ray, leftChildBox)) {
-                            leftChild = { 0, node.children[0] };
-                        } else {
-                            leftChild = { ray.t, node.children[0] };
-                        }
+                    Trav leftChild;
+                    if (isInAABB(ray, leftChildBox)) {
+                        leftChild = { 0, node.children[0] };
+                        queue.push(leftChild);
+
+                        // For debug draw intersected node's AABB
+                        if (rayNodeIntersectionDebug)
+                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                    } else if (intersectRayWithShape(leftChildBox, ray)) {
+                        leftChild = { ray.t, node.children[0] };
                         ray.t = oldT; // No need to remember the AABB intersection t
 
                         // For debug draw intersected node's AABB
                         if (rayNodeIntersectionDebug)
                             drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
 
-                        // Add children to the queue only if they show potential for a better hit
                         if (leftChild.t <= ray.t)
                             queue.push(leftChild);
                     }
@@ -754,21 +756,21 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                     AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
                     oldT = ray.t;
 
-                    // If ray intersects AABB put into queue
-                    if (intersectRayWithShape(rightChildBox, ray)) {
-                        Trav rightChild;
-                        if (isInAABB(ray, rightChildBox)) {
-                            rightChild = { 0, node.children[1] };
-                        } else {
-                            rightChild = { ray.t, node.children[1] };
-                        }
-                        ray.t = oldT; // No need to remember the AABB intersection t
+                    Trav rightChild;
+                    if (isInAABB(ray, rightChildBox)) {
+                        rightChild = { 0, node.children[1] };
+                        queue.push(rightChild);
 
                         // For debug draw intersected node's AABB
                         if (rayNodeIntersectionDebug)
-                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 {1}, 0.4f);
+                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                    } else if (intersectRayWithShape(rightChildBox, ray)) {
+                        rightChild = { ray.t, node.children[1] };
+                        ray.t = oldT;
 
-                        // Add children to the queue only if they show potential for a better hit
+                        if (rayNodeIntersectionDebug)
+                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+
                         if (rightChild.t <= ray.t)
                             queue.push(rightChild);
                     }
