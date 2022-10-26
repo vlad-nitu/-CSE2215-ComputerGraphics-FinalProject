@@ -4,6 +4,7 @@
 #include "render.h"
 #include "screen.h"
 #include "bounding_volume_hierarchy.h"
+#include "texture.h" 
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -243,7 +244,14 @@ int main(int argc, char** argv)
                     ImGui::Text("Normal Interpolation");
                     ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
                 }
+
+                if (config.features.extra.enableMipmapTextureFiltering){
+                    ImGui::Text("MipMap Filtering");
+                    ImGui::Checkbox("Draw MipMap closest two levels", &drawMipMapDebug);
+                }
             }
+            else 
+                drawMipMapDebug = false; 
 
             ImGui::Spacing();
             ImGui::Separator();

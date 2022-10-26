@@ -6,6 +6,7 @@
 #include "draw.h"
 
 int mipmap_max_depth = 0;
+bool drawMipMapDebug = false;
 
 /*
 Create MipMap w/ 5 levels, where initial_image is on level 0 (root) 
@@ -90,7 +91,8 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
                 level = mipmap_max_depth;
             img = images[level];
 
-             debugDrawMipMapLevel(level); 
+             if (drawMipMapDebug)
+                debugDrawMipMapLevel(level); 
         }
 
     int col = texCoord.x * img.width; // Convert to int so values are rounded down representing the line
