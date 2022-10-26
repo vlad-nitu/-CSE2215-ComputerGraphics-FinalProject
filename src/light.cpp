@@ -58,7 +58,7 @@ float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& deb
     glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
     float tLight = glm::distance(samplePos, currentPoint);
 
-    Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, std::numeric_limits<float>::max() };
+    Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight };
     if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
         if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
             if (drawShadowRayDebug)
