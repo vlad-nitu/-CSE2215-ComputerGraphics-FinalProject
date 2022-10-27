@@ -7,7 +7,6 @@
 #include <glm/gtc/random.hpp> // Ask TA if this is allowed
 #include <random> // Ask Ta if this is allowed
 
-
 // Import in order to perform second visual debug for BVH traversal
 #include <bounding_volume_hierarchy.h> // Ask TAs if allowed
 
@@ -46,7 +45,7 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
     } else {
         drawUnvisited = false;
     }
-    
+
     if (bvh.intersect(ray, hitInfo, features)) {
 
         glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
@@ -64,7 +63,7 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         if (rayDepth == 1) {
             // Implement DOF
             if (features.extra.enableDepthOfField) {
-             
+
                 Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
 
                 Lo /= (DOFsamples + 1);
@@ -96,8 +95,8 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
 /// <returns> Returns a random float </returns>
 float getRand(float x, float y)
 {
-    //return glm::linearRand(x, y);
-    
+    // return glm::linearRand(x, y);
+
     // Implementation taken from https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -143,22 +142,22 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
                 glm::vec3 pixelColor = glm::vec3 { 0 };
 
                 /*
-                * Implementaion taken from:
-                * 
-                * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
-                * Chapter 13.4.1
-                * 
-                * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
-                * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
-                * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
-                * 
-                * This method retains the random property while making sure that no clusters or patterns arrise.
-                */
+                 * Implementaion taken from:
+                 *
+                 * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
+                 * Chapter 13.4.1
+                 *
+                 * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
+                 * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
+                 * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
+                 *
+                 * This method retains the random property while making sure that no clusters or patterns arrise.
+                 */
                 for (int p = 0; p < samplesPerPixel; p++) {
                     for (int q = 0; q < samplesPerPixel; q++) {
 
                         // Compute the position inside the pixel where this ray should go through
-                        glm::vec2 samplePosition{
+                        glm::vec2 samplePosition {
                             (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
                             (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
                         };
