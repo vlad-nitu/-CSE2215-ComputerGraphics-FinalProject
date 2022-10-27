@@ -137,27 +137,36 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
                 if (features.enableSoftShadow) {
-                    glm::vec3 color = glm::vec3 { 0 };
+                    glm::vec3 position = glm::vec3 { 0.0f };
+                    glm::vec3 color = glm::vec3 { 0.0f };
 
                     for (int i = 0; i < SAMPLE_COUNT; i++) {
                         glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
-                        glm::vec3 sampleColor = glm::vec3 { 0 };
+                        glm::vec3 sampleColor = glm::vec3 { 0.0f };
 
                         sampleSegmentLight(segmentLight, samplePosition, sampleColor);
 
                         // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
-                        color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+                        // color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+
+                        position += samplePosition;
+                        color += isVisible * sampleColor;
                     }
 
-                    result += (color / static_cast<float>(SAMPLE_COUNT));
+                    // result += (color / static_cast<float>(SAMPLE_COUNT));
+
+                    position /= SAMPLE_COUNT;
+                    color /= SAMPLE_COUNT;
+                    result += computeShading(position, color, features, ray, hitInfo);
                 }
 
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
                 if (features.enableSoftShadow) {
-                    glm::vec3 color = glm::vec3 { 0 };
+                    glm::vec3 position = glm::vec3 { 0.0f };
+                    glm::vec3 color = glm::vec3 { 0.0f };
 
                     for (int i = 0; i < SAMPLE_COUNT; i++) {
                         glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
@@ -167,10 +176,17 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
                         // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
-                        color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+                        // color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+
+                        position += samplePosition;
+                        color += isVisible * sampleColor;
                     }
 
-                    result += (color / static_cast<float>(SAMPLE_COUNT));
+                    // result += (color / static_cast<float>(SAMPLE_COUNT));
+
+                    position /= SAMPLE_COUNT;
+                    color /= SAMPLE_COUNT;
+                    result += computeShading(position, color, features, ray, hitInfo);
                 }
 
             }
@@ -178,106 +194,7 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
         return result;
 
     } else {
-        return computeShading(glm::vec3 { 0 }, glm::vec3 { 0 }, features, ray, hitInfo);
-    }
-}
-
-// Old version of computeLightContribution() -> with position-averaging and different color assignment
-/*
----------
-glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, const Features& features, Ray ray, HitInfo hitInfo)
-{
-    if (features.enableShading) {
-        // If shading is enabled, compute the contribution from all lights.
-
-        glm::vec3 result = glm::vec3 { 0.0f };
-
-        for (const auto& light : scene.lights) {
-            if (std::holds_alternative<PointLight>(light)) {
-                const PointLight pointLight = std::get<PointLight>(light);
-
-                if (features.enableHardShadow) {
-                    float lightContribution = testVisibilityLightSample(pointLight.position, pointLight.color, bvh, features, ray, hitInfo);
-
-                    result += lightContribution * computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
-                } else
-                    result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
-
-            } else if (std::holds_alternative<SegmentLight>(light)) {
-                const SegmentLight segmentLight = std::get<SegmentLight>(light);
-
-                if (features.enableSoftShadow) {
-
-                    const int SAMPLE_COUNT = 20;
-
-                    glm::vec3 position = glm::vec3 { 0 };
-                    glm::vec3 color = glm::vec3 { 0 };
-
-                    // Generating a uniform random number in the interval [0; 1)
-                    std::default_random_engine engine(seed);
-                    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-
-                    for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
-                        glm::vec3 sampleColor = glm::vec3 { 0 };
-
-                        sampleSegmentLight(segmentLight, samplePosition, sampleColor);
-
-                        // Accumulating positions
-                        position += samplePosition;
-
-                        // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
-                        float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
-                        color += isVisible * sampleColor;
-                    }
-                    // Computing averages for position and color
-                    position /= SAMPLE_COUNT;
-                    color /= SAMPLE_COUNT;
-
-                    result += computeShading(position, color, features, ray, hitInfo);
-                }
-
-            } else if (std::holds_alternative<ParallelogramLight>(light)) {
-                const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
-
-                if (features.enableSoftShadow) {
-
-                    const int SAMPLE_COUNT = 40;
-
-                    glm::vec3 position = glm::vec3 { 0 };
-                    glm::vec3 color = glm::vec3 { 0 };
-
-                    // Generating two uniform random numbers in the interval [0; 1)
-                    std::default_random_engine engine(seed);
-                    std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
-
-                    for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
-                        glm::vec3 sampleColor = glm::vec3 { uniform(engine) };
-
-                        sampleParallelogramLight(parallelogramLight, samplePosition, sampleColor);
-
-                        // Accumulating positions
-                        position += samplePosition;
-
-                        // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
-                        float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
-                        color += isVisible * sampleColor;
-                    }
-                    // Computing averages for position and color
-                    position /= SAMPLE_COUNT;
-                    color /= SAMPLE_COUNT;
-
-                    result += computeShading(position, color, features, ray, hitInfo);
-                }
-            }
-        }
         // return hitInfo.material.kd;
-        return result;
-
-    } else {
-        return computeShading(glm::vec3 { 0 }, glm::vec3 { 0 }, features, ray, hitInfo);
+        return computeShading(glm::vec3 { 0.0f }, glm::vec3 { 0.0f }, features, ray, hitInfo);
     }
 }
----------
-*/
