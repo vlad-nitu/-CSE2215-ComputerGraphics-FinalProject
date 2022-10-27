@@ -156,7 +156,9 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                     glm::vec3 color = glm::vec3 { 0.0f };
 
                     for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
+                        float alpha = uniform(engine);
+
+                        glm::vec3 samplePosition = glm::vec3 { alpha };
                         glm::vec3 sampleColor = glm::vec3 { 0.0f };
 
                         sampleSegmentLight(segmentLight, samplePosition, sampleColor);
@@ -179,8 +181,11 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                     glm::vec3 color = glm::vec3 { 0.0f };
 
                     for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        glm::vec3 samplePosition = glm::vec3 { uniform(engine) };
-                        glm::vec3 sampleColor = glm::vec3 { uniform(engine) };
+                        float alpha = uniform(engine);
+                        float beta = uniform(engine);
+
+                        glm::vec3 samplePosition = glm::vec3 { alpha };
+                        glm::vec3 sampleColor = glm::vec3 { beta };
 
                         sampleParallelogramLight(parallelogramLight, samplePosition, sampleColor);
 
