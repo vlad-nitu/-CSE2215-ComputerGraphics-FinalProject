@@ -260,10 +260,6 @@ int main(int argc, char** argv)
                     if (config.features.extra.enableMultipleRaysPerPixel) {
                         ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
                     }
-
-                    if (config.features.extra.enableDepthOfField) {
-                        ImGui::Checkbox("Draw depth of field rays", &drawDebugDOF);
-                    }
                         
                 }
             }

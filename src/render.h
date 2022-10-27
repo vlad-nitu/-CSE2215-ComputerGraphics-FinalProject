@@ -29,7 +29,6 @@ extern int samplesPerPixel;
 extern float focalLength;
 extern float aperture;
 extern int DOFsamples;
-extern bool drawDebugDOF;
 
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
