@@ -33,7 +33,6 @@ int samplesPerPixel = 2; // Sample size per pixel
 float focalLength = 4.0f;
 float aperture = 0.05f;
 int DOFsamples = 1;
-bool drawDebugDOF = false;
 
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
