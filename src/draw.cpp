@@ -213,15 +213,23 @@ void drawRay(const Ray& ray, const glm::vec3& color)
 }
 
 void drawSphereCustom(float radius, glm::vec3& color, Ray& ray) { 
-    printf("%f\n", radius);
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
+
     glm::vec3 ray_dir = ray.origin+ ray.t * ray.direction; 
-    // printf("%f %f %f\n", ray_dir.x, ray_dir.y, ray_dir.z);
-    glTranslatef(ray_dir.x, ray_dir.y, ray_dir.z);
-    glColor3fv(glm::value_ptr(color));
-    GLUquadric* quadric = gluNewQuadric();
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glColor4f(color.r, color.g, color.b, 0.3f);
+    glPolygonMode(GL_FRONT, GL_FILL);
+    glPolygonMode(GL_BACK, GL_FILL);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    const glm::mat4 transform = glm::translate(glm::identity<glm::mat4>(), ray_dir);
+    glMultMatrixf(glm::value_ptr(transform));
+    auto quadric = gluNewQuadric();
     gluQuadricDrawStyle(quadric, GLU_LINE);
     gluSphere(quadric, radius, 24, 24);
-    glTranslatef(- ray_dir.x, - ray_dir.y, - ray_dir.z);
+    glPopMatrix();
+
     glPopAttrib();
+
 }
