@@ -9,17 +9,19 @@ DISABLE_WARNINGS_POP()
 #include <random>
 
 bool drawShadowRayDebug = false;
-// Constant seed used for uniform random numbers (for sampling the line-segment and parallelogram light sources)
-// N.B.: Not using a random seed (the random device and the seed are computed only once every run)
-// Otherwise, once the project is run, the shadow rays would be continuously recalculated, and no static shadows would be produced.
-std::random_device rd;
-unsigned seed = rd();
+bool useConstantSeed = false;
+
+// Constant seed used when debugging (for sampling the line-segment and parallelogram light sources)
+// N.B.: Not using a dynamically-computed seed (the random device and the seed are computed only once every run)
+// Otherwise, once the project is run, the shadow rays would be continuously recalculated, and debugging would be difficult.
+std::random_device rdConstant;
+unsigned seedConstant = rdConstant();
 
 // samples a segment light source
 // you should fill in the vectors position and color with the sampled position and color
 void sampleSegmentLight(const SegmentLight& segmentLight, glm::vec3& position, glm::vec3& color)
 {
-    // Extracting the uniform random number (alpha) -> changing method signatures is not allowed
+    // Extracting the uniform random number (alpha)
     float alpha = position.x;
 
     // Computing the position coordinates (somewhere along the line-segment)
@@ -37,7 +39,7 @@ void sampleSegmentLight(const SegmentLight& segmentLight, glm::vec3& position, g
 // Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 13, Section 13.4.2, pp. 331-332
 void sampleParallelogramLight(const ParallelogramLight& parallelogramLight, glm::vec3& position, glm::vec3& color)
 {
-    // Extracting the uniform random numbers (alpha, beta) -> changing method signatures is not allowed
+    // Extracting the uniform random numbers (alpha, beta)
     float alpha = position.x;
     float beta = color.x;
 
@@ -116,7 +118,21 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
         glm::vec3 result = glm::vec3 { 0.0f };
 
+        // Number of samples taken from a given light source (only for line-segment and parallelogram light sources)
+        // N.B.: A larger value reduces the noise in the rendered image yet also makes the rendering process slower!
         const int SAMPLE_COUNT = 100;
+
+        // Dynamically-computed seed used when rendering (for sampling the line-segment and parallelogram light sources)
+        std::random_device rdDynamic;
+        unsigned seedDynamic = rdDynamic();
+
+        // Distinguish between debugging (constant seed) or rendering (dynamically-computed seed)
+        unsigned seed = 0;
+        if (useConstantSeed) {
+            seed = seedConstant;
+        } else {
+            seed = seedDynamic;
+        }
 
         // Used for generating uniform random numbers in the interval [0; 1)
         std::default_random_engine engine(seed);
@@ -137,7 +153,6 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
                 if (features.enableSoftShadow) {
-                    glm::vec3 position = glm::vec3 { 0.0f };
                     glm::vec3 color = glm::vec3 { 0.0f };
 
                     for (int i = 0; i < SAMPLE_COUNT; i++) {
@@ -148,24 +163,19 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
                         // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
-                        // color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
-
-                        position += samplePosition;
-                        color += isVisible * sampleColor;
+                        color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
 
-                    // result += (color / static_cast<float>(SAMPLE_COUNT));
-
-                    position /= SAMPLE_COUNT;
-                    color /= SAMPLE_COUNT;
-                    result += computeShading(position, color, features, ray, hitInfo);
+                    // Averaging the shading result
+                    result += (color / static_cast<float>(SAMPLE_COUNT));
                 }
+
+                // If soft shadows are disabled and a point light source is absent, the scene will appear black!
 
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
                 if (features.enableSoftShadow) {
-                    glm::vec3 position = glm::vec3 { 0.0f };
                     glm::vec3 color = glm::vec3 { 0.0f };
 
                     for (int i = 0; i < SAMPLE_COUNT; i++) {
@@ -176,25 +186,21 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
                         // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
-                        // color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
-
-                        position += samplePosition;
-                        color += isVisible * sampleColor;
+                        color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
 
-                    // result += (color / static_cast<float>(SAMPLE_COUNT));
-
-                    position /= SAMPLE_COUNT;
-                    color /= SAMPLE_COUNT;
-                    result += computeShading(position, color, features, ray, hitInfo);
+                    // Averaging the shading result
+                    result += (color / static_cast<float>(SAMPLE_COUNT));
                 }
+
+                // If soft shadows are disabled and a point light source is absent, the scene will appear black!
 
             }
         }
         return result;
 
     } else {
-        // return hitInfo.material.kd;
+        // The method call below returns hitInfo.material.kd (unless textures are enabled)
         return computeShading(glm::vec3 { 0.0f }, glm::vec3 { 0.0f }, features, ray, hitInfo);
     }
 }

@@ -209,8 +209,12 @@ int main(int argc, char** argv)
                 }
 
                 if (config.features.enableHardShadow || config.features.enableSoftShadow) {
-                    ImGui::Text("Hard (and soft) shadows");
+                    ImGui::Text("Hard and soft shadows");
                     ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
+                }
+
+                if (config.features.enableSoftShadow) {
+                    ImGui::Checkbox("Use constant seed", &useConstantSeed);
                 }
 
                 if (config.features.enableAccelStructure) {
