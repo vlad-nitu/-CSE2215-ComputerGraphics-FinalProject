@@ -136,12 +136,17 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Shading", &config.features.enableShading);
                 ImGui::Checkbox("Recursive(reflections)", &config.features.enableRecursive);
                 if (config.features.enableRecursive) {
-                    ImGui::SliderInt("Number of reflections", &max_ray_depth, 2, 10);
+                    ImGui::SliderInt("Number of rays", &max_ray_depth, 2, 10);
                 }
-
                 ImGui::Checkbox("Hard shadows", &config.features.enableHardShadow);
                 ImGui::Checkbox("Soft shadows", &config.features.enableSoftShadow);
+                if (config.features.enableSoftShadow) {
+                    ImGui::SliderInt("Sample count", &SAMPLE_COUNT, 10, 300);
+                }
                 ImGui::Checkbox("BVH", &config.features.enableAccelStructure);
+                if (config.features.enableAccelStructure) {
+
+                }
                 ImGui::Checkbox("Texture mapping", &config.features.enableTextureMapping);
                 ImGui::Checkbox("Normal interpolation", &config.features.enableNormalInterp);
             }
@@ -149,16 +154,37 @@ int main(int argc, char** argv)
 
             if (ImGui::CollapsingHeader("Extra Features")) {
                 ImGui::Checkbox("Environment mapping", &config.features.extra.enableEnvironmentMapping);
+                if (config.features.extra.enableEnvironmentMapping) {
+                    // Insert config
+                }
                 ImGui::Checkbox("BVH SAH binning", &config.features.extra.enableBvhSahBinning);
+                if (config.features.extra.enableBvhSahBinning) {
+                    // Insert config
+                }
                 ImGui::Checkbox("Bloom effect", &config.features.extra.enableBloomEffect);
+                if (config.features.extra.enableBloomEffect) {
+                    // Insert config
+                }
                 ImGui::Checkbox("Texture filtering(bilinear interpolation)", &config.features.extra.enableBilinearTextureFiltering);
+                if (config.features.extra.enableBilinearTextureFiltering) {
+                    // Insert config
+                }
                 ImGui::Checkbox("Texture filtering(mipmapping)", &config.features.extra.enableMipmapTextureFiltering);
+                if (config.features.extra.enableMipmapTextureFiltering) {
+                    // Insert config
+                }
                 ImGui::Checkbox("Multiple rays per pixel", &config.features.extra.enableMultipleRaysPerPixel);
                 if (config.features.extra.enableMultipleRaysPerPixel) {
-                    ImGui::SliderInt("Subdivisions per side(real is squared)", &samplesPerPixel, 2, 4);
+                    ImGui::SliderInt("Subdivisions per side(real is squared)", &samplesPerPixel, 2, 6);
                 }
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
+                if (config.features.extra.enableGlossyReflection) {
+                    // Insert config
+                }
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
+                if (config.features.extra.enableTransparency) {
+                    // Insert config
+                }
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
                     ImGui::SliderInt("Samples per pixel", &DOFsamples, 1, 100);
@@ -208,22 +234,19 @@ int main(int argc, char** argv)
             if (viewMode == ViewMode::Rasterization) {
 
                 if (ImGui::CollapsingHeader("Basic Features debug")) {
-                    if (config.features.enableShading) {
-                        ImGui::Text("Shading");
+                    if (ImGui::CollapsingHeader("Shading") && config.features.enableShading ) {
                         ImGui::Checkbox("Draw shading debug", &drawDebugShading);
                     }
 
-                    if (config.features.enableRecursive) {
-                        ImGui::Text("Recursive ray-tracer");
+                    if (ImGui::CollapsingHeader("Recursive ray-tracer") && config.features.enableRecursive) {
                         ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
                     }
 
-                    if (config.features.enableHardShadow || config.features.enableSoftShadow) {
-                        ImGui::Text("Hard (and soft) shadows");
+                    if (ImGui::CollapsingHeader("Hard (and soft) shadows") && config.features.enableHardShadow || config.features.enableSoftShadow) {
                         ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
                     }
 
-                    if (config.features.enableAccelStructure) {
+                    if (ImGui::CollapsingHeader("BVH") && config.features.enableAccelStructure) {
                         ImGui::Text("BVH Construction");
 
                         ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
@@ -249,19 +272,49 @@ int main(int argc, char** argv)
                         }
                     }
 
-                    if (config.features.enableNormalInterp) {
+                    if (ImGui::CollapsingHeader("Shading debug") && config.features.enableNormalInterp) {
                         ImGui::Text("Normal Interpolation");
                         ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
+                    }
+
+                    if (ImGui::CollapsingHeader("Texture debug") && config.features.enableTextureMapping) {
+                        // Insert debug config
                     }
                 }
 
                 if (ImGui::CollapsingHeader("Extra Features debug")) {
 
-                    if (config.features.extra.enableMultipleRaysPerPixel) {
-                        ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
+                    if (ImGui::CollapsingHeader("Environment maps") && config.features.extra.enableEnvironmentMapping) {
+                        // Insert debug config
+                    }
+                    if (ImGui::CollapsingHeader("SAH + Binning") && config.features.extra.enableBvhSahBinning) {
+                        // Insert debug config
+                    }
+                    if (ImGui::CollapsingHeader("Bloom") && config.features.extra.enableBloomEffect) {
+                        // Insert debug config
+                    }
+                    if (ImGui::CollapsingHeader("Bilinear interpolation") && config.features.extra.enableBilinearTextureFiltering) {
+                        // Insert debug config
+                    }
+                    if (ImGui::CollapsingHeader("Mipmapping") && config.features.extra.enableMipmapTextureFiltering) {
+                        // Insert debug config
+                    }
+                    if (ImGui::CollapsingHeader("Supersampling") && config.features.extra.enableMultipleRaysPerPixel) {
+                        ImGui::Text("Supersampling debug is available in raytracing mode");
+                    }
+                    if (ImGui::CollapsingHeader("Glossy reflection") && config.features.extra.enableGlossyReflection) {
+                        // Insert debug config
+                    }
+                    if (ImGui::CollapsingHeader("Transparency") && config.features.extra.enableTransparency) {
+                        // Insert debug config
+                    }
+                    if (ImGui::CollapsingHeader("Depth of field") && config.features.extra.enableDepthOfField) {
+                        // Insert debug config
                     }
                         
                 }
+            } else {
+            
             }
 
             ImGui::Spacing();

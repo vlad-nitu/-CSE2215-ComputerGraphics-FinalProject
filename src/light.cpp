@@ -9,6 +9,9 @@ DISABLE_WARNINGS_POP()
 #include <random>
 
 bool drawShadowRayDebug = false;
+
+int SAMPLE_COUNT = 100;
+
 // Constant seed used for uniform random numbers (for sampling the line-segment and parallelogram light sources)
 // N.B.: Not using a random seed (the random device and the seed are computed only once every run)
 // Otherwise, once the project is run, the shadow rays would be continuously recalculated, and no static shadows would be produced.
@@ -115,8 +118,6 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
         // If shading is enabled, compute the contribution from all lights.
 
         glm::vec3 result = glm::vec3 { 0.0f };
-
-        const int SAMPLE_COUNT = 100;
 
         // Used for generating uniform random numbers in the interval [0; 1)
         std::default_random_engine engine(seed);

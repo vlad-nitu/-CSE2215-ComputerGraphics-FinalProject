@@ -8,6 +8,8 @@
 
 extern bool drawShadowRayDebug;
 
+extern int SAMPLE_COUNT;
+
 void sampleSegmentLight (const SegmentLight& segmentLight, glm::vec3& position, glm::vec3& color);
 
 void sampleParallelogramLight (const ParallelogramLight& parallelogramLight, glm::vec3& position, glm::vec3& color);
