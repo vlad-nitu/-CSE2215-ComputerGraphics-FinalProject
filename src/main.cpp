@@ -153,6 +153,10 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Bloom effect", &config.features.extra.enableBloomEffect);
                 ImGui::Checkbox("Texture filtering(bilinear interpolation)", &config.features.extra.enableBilinearTextureFiltering);
                 ImGui::Checkbox("Texture filtering(mipmapping)", &config.features.extra.enableMipmapTextureFiltering);
+                ImGui::Checkbox("Multiple rays per pixel", &config.features.extra.enableMultipleRaysPerPixel);
+                if (config.features.extra.enableMultipleRaysPerPixel) {
+                    ImGui::SliderInt("Subdivisions per side(real is squared)", &samplesPerPixel, 2, 4);
+                }
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
@@ -198,33 +202,34 @@ int main(int argc, char** argv)
             ImGui::Text("Debugging");
             if (viewMode == ViewMode::Rasterization) {
 
-                if (config.features.enableShading) {
-                    ImGui::Text("Shading");
-                    ImGui::Checkbox("Draw shading debug", &drawDebugShading);
-                }
+                if (ImGui::CollapsingHeader("Basic Features debug")) {
+                    if (config.features.enableShading) {
+                        ImGui::Text("Shading");
+                        ImGui::Checkbox("Draw shading debug", &drawDebugShading);
+                    }
 
-                if (config.features.enableRecursive) {
-                    ImGui::Text("Recursive ray-tracer");
-                    ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
-                }
+                    if (config.features.enableRecursive) {
+                        ImGui::Text("Recursive ray-tracer");
+                        ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
+                    }
 
                 if (config.features.enableHardShadow || config.features.enableSoftShadow) {
                     ImGui::Text("Hard (and soft) shadows");
                     ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
                 }
 
-                if (config.features.enableAccelStructure) {
-                    ImGui::Text("BVH Construction");
+                    if (config.features.enableAccelStructure) {
+                        ImGui::Text("BVH Construction");
 
-                    ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
-                    if (debugBVHLevel)
-                        ImGui::SliderInt("BVH Level", &bvhDebugLevel, 0, bvh.numLevels() - 1);
-                    ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
-                    if (debugBVHLeaf)
-                        ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
+                        ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
+                        if (debugBVHLevel)
+                            ImGui::SliderInt("BVH Level", &bvhDebugLevel, 0, bvh.numLevels() - 1);
+                        ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
+                        if (debugBVHLeaf)
+                            ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
 
-                    ImGui::Spacing();
-                    ImGui::Text("BVH Traversal");
+                        ImGui::Spacing();
+                        ImGui::Text("BVH Traversal");
 
                     ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
 
@@ -239,10 +244,10 @@ int main(int argc, char** argv)
                     }
                 }
 
-                if (config.features.enableNormalInterp) {
-                    ImGui::Text("Normal Interpolation");
-                    ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
+                if (ImGui::CollapsingHeader("Extra Features debug")) {
+                    ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
                 }
+                
             }
 
             ImGui::Spacing();

@@ -23,8 +23,14 @@ extern int max_ray_depth;
 extern bool showUnvisited;
 extern int traversalDebugDepth;
 
+extern bool drawDebugSupersamplingRays;
+
+extern int samplesPerPixel;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
+
+float getRand(float x = 0.0f, float y = 1.0f - std::numeric_limits<float>::epsilon());
 
 // Get the color of a ray.
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth = 1);
