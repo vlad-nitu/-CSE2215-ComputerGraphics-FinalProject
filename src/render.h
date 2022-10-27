@@ -13,8 +13,18 @@ class Trackball;
 class BvhInterface;
 struct Features;
 
+// Change the color of the ray according to Phong Shading model
+extern bool drawDebugShading;
+
+// Change the maximum allowed ray depth
+extern int max_ray_depth;
+
+// The level in the recursion tree of which to show the intersected but unvisited nodes of the BVH
+extern bool showUnvisited;
+extern int traversalDebugDepth;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
 
 // Get the color of a ray.
-glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth = 0);
+glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth = 1);

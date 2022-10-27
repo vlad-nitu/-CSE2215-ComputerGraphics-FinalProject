@@ -3,6 +3,7 @@
 #include "light.h"
 #include "render.h"
 #include "screen.h"
+#include "bounding_volume_hierarchy.h"
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -65,7 +66,7 @@ int main(int argc, char** argv)
         SceneType sceneType { SceneType::SingleTriangle };
         std::optional<Ray> optDebugRay;
         Scene scene = loadScenePrebuilt(sceneType, config.dataPath);
-        BvhInterface bvh { &scene };
+        BvhInterface bvh { &scene, config.features };
 
         int bvhDebugLevel = 0;
         int bvhDebugLeaf = 0;
@@ -118,7 +119,7 @@ int main(int argc, char** argv)
                     optDebugRay.reset();
                     scene = loadScenePrebuilt(sceneType, config.dataPath);
                     selectedLightIdx = scene.lights.empty() ? -1 : 0;
-                    bvh = BvhInterface(&scene);
+                    bvh = BvhInterface(&scene, config.features);
                     if (optDebugRay) {
                         HitInfo dummy {};
                         bvh.intersect(*optDebugRay, dummy, config.features);
@@ -134,6 +135,10 @@ int main(int argc, char** argv)
             if (ImGui::CollapsingHeader("Features", ImGuiTreeNodeFlags_DefaultOpen)) {
                 ImGui::Checkbox("Shading", &config.features.enableShading);
                 ImGui::Checkbox("Recursive(reflections)", &config.features.enableRecursive);
+                if (config.features.enableRecursive) {
+                    ImGui::SliderInt("Number of reflections", &max_ray_depth, 1, 10);
+                }
+
                 ImGui::Checkbox("Hard shadows", &config.features.enableHardShadow);
                 ImGui::Checkbox("Soft shadows", &config.features.enableSoftShadow);
                 ImGui::Checkbox("BVH", &config.features.enableAccelStructure);
@@ -192,12 +197,56 @@ int main(int argc, char** argv)
             ImGui::Separator();
             ImGui::Text("Debugging");
             if (viewMode == ViewMode::Rasterization) {
-                ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
-                if (debugBVHLevel)
-                    ImGui::SliderInt("BVH Level", &bvhDebugLevel, 0, bvh.numLevels() - 1);
-                ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
-                if (debugBVHLeaf)
-                    ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
+
+                if (config.features.enableShading) {
+                    ImGui::Text("Shading");
+                    ImGui::Checkbox("Draw shading debug", &drawDebugShading);
+                }
+
+                if (config.features.enableRecursive) {
+                    ImGui::Text("Recursive ray-tracer");
+                    ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
+                }
+
+                if (config.features.enableHardShadow || config.features.enableSoftShadow) {
+                    ImGui::Text("Hard and soft shadows");
+                    ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
+                }
+
+                if (config.features.enableSoftShadow) {
+                    ImGui::Checkbox("Use constant seed", &useConstantSeed);
+                }
+
+                if (config.features.enableAccelStructure) {
+                    ImGui::Text("BVH Construction");
+
+                    ImGui::Checkbox("Draw BVH Level", &debugBVHLevel);
+                    if (debugBVHLevel)
+                        ImGui::SliderInt("BVH Level", &bvhDebugLevel, 0, bvh.numLevels() - 1);
+                    ImGui::Checkbox("Draw BVH Leaf", &debugBVHLeaf);
+                    if (debugBVHLeaf)
+                        ImGui::SliderInt("BVH Leaf", &bvhDebugLeaf, 1, bvh.numLeaves());
+
+                    ImGui::Spacing();
+                    ImGui::Text("BVH Traversal");
+
+                    ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
+
+                    ImGui::Checkbox("Show intersected but not visited", &showUnvisited);
+                    if (showUnvisited) {
+                        if (config.features.enableRecursive)
+                            ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, max_ray_depth + 1);
+                        else {
+                            traversalDebugDepth = 1;
+                            ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, 1);
+                        }
+                    }
+                }
+
+                if (config.features.enableNormalInterp) {
+                    ImGui::Text("Normal Interpolation");
+                    ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
+                }
             }
 
             ImGui::Spacing();
@@ -387,7 +436,7 @@ int main(int argc, char** argv)
                        }),
             config.scene);
 
-        BvhInterface bvh { &scene };
+        BvhInterface bvh { &scene, config.features };
 
         using clock = std::chrono::high_resolution_clock;
         // Create output directory if it does not exist.
