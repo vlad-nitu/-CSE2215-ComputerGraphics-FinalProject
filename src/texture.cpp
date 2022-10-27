@@ -50,7 +50,7 @@ std::vector<Image> createImages(const Image& image) {
     return images;
 }
 
-void debugDrawMipMapLevel(int level) { 
+void debugDrawMipMapLevel(int level, Ray& ray) { 
 
     glm::vec3 center{0,0,0}; 
 
@@ -68,12 +68,12 @@ void debugDrawMipMapLevel(int level) {
 
         glm::vec3 RED {1.0f, 0.0f, 0.0f}; 
         glm::vec3 GREEN {0.0f, 1.0f, 0.0f}; 
-        drawSphereCustom(2 * level, RED); 
-        drawSphereCustom(2 * (level + 1), GREEN); 
+        drawSphereCustom(2 * level, RED, ray); 
+        drawSphereCustom(2 * (level + 1), GREEN, ray); 
 
 } 
 
-glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level)
+glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level, Ray& ray)
 {
     // TODO: implement this function.
     // Given texcoords, return the corresponding pixel of the image
@@ -92,7 +92,7 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
             img = images[level];
 
              if (drawMipMapDebug)
-                debugDrawMipMapLevel(level); 
+                debugDrawMipMapLevel(level, ray); 
         }
 
     int col = texCoord.x * img.width; // Convert to int so values are rounded down representing the line

@@ -16,7 +16,7 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
 
     if (features.extra.enableMipmapTextureFiltering){
             int level = ray.t / 2; 
-            glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, level);
+            glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, level, ray);
 
             if (features.enableTextureMapping && hitInfo.material.kdTexture)
                 return lightColor * kd * dotProduct;
