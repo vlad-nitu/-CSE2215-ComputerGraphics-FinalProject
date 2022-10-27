@@ -25,9 +25,16 @@ int max_ray_depth = 1;
 bool showUnvisited = false;
 int traversalDebugDepth = 1;
 
+// Debug for supersampling
 bool drawDebugSupersamplingRays = false;
+int samplesPerPixel = 2; // Sample size per pixel
 
-int samplesPerPixel = 2;
+// Set focal length for depth of field
+float focalLength = 4.0f;
+float aperture = 0.05f;
+int DOFsamples = 2;
+bool drawDebugDOF = false;
+bool alreadySampled = false;
 
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
@@ -52,6 +59,19 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
             if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 } && rayDepth <= max_ray_depth) {
                 float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
                 Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+            }
+        }
+
+        // Check if therays come from the camera
+        if (rayDepth == 1 && !alreadySampled) {
+
+            // Implement DOF
+            if (features.extra.enableDepthOfField) {
+                alreadySampled = true;
+                Lo += pixelColorDOF(scene, bvh, ray, features);
+                alreadySampled = false;
+
+                Lo /= (DOFsamples + 1);
             }
         }
 
@@ -90,6 +110,22 @@ float getRand(float x, float y)
     return dis(gen);
 }
 
+glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features)
+{
+    glm::vec3 color = glm::vec3 { 0 };
+    glm::vec3 focalPoint = ray.origin + focalLength * ray.direction;
+
+    for (int i = 0; i < DOFsamples; i++) {
+        glm::vec3 randomLense = ray.origin + glm::vec3 { getRand(-aperture, aperture), getRand(-aperture, aperture), getRand(-aperture, aperture) };
+
+        Ray newRay = { randomLense, glm::normalize(focalPoint - randomLense) };
+
+        color += getFinalColor(scene, bvh, newRay, features);
+    }
+
+    return color;
+}
+
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features)
 {
     glm::ivec2 windowResolution = screen.resolution();
@@ -106,45 +142,45 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
             };
 
             // Check if we need to turn on multiple rays per pixel
-            if (features.extra.enableMultipleRaysPerPixel) {
+            //if (features.extra.enableMultipleRaysPerPixel) {
 
-                glm::vec3 pixelColor = glm::vec3 { 0 };
+            //    glm::vec3 pixelColor = glm::vec3 { 0 };
 
-                /*
-                * Implementaion taken from:
-                * 
-                * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
-                * Chapter 13.4.1
-                * 
-                * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
-                * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
-                * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
-                * 
-                * This method retains the random property while making sure that no clusters or patterns arrise.
-                */
-                for (int p = 0; p < samplesPerPixel; p++) {
-                    for (int q = 0; q < samplesPerPixel; q++) {
+            //    /*
+            //    * Implementaion taken from:
+            //    * 
+            //    * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
+            //    * Chapter 13.4.1
+            //    * 
+            //    * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
+            //    * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
+            //    * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
+            //    * 
+            //    * This method retains the random property while making sure that no clusters or patterns arrise.
+            //    */
+            //    for (int p = 0; p < samplesPerPixel; p++) {
+            //        for (int q = 0; q < samplesPerPixel; q++) {
 
-                        // Compute the position inside the pixel where this ray should go through
-                        glm::vec2 samplePosition{
-                            (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
-                            (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
-                        };
+            //            // Compute the position inside the pixel where this ray should go through
+            //            glm::vec2 samplePosition{
+            //                (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
+            //                (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
+            //            };
 
-                        const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
+            //            const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
 
-                        pixelColor += getFinalColor(scene, bvh, sampleRay, features);
-                    }
-                }
+            //            pixelColor += getFinalColor(scene, bvh, sampleRay, features);
+            //        }
+            //    }
 
-                // Average the values
-                pixelColor /= samplesPerPixel * samplesPerPixel;
-                screen.setPixel(x, y, pixelColor);
+            //    // Average the values
+            //    pixelColor /= samplesPerPixel * samplesPerPixel;
+            //    screen.setPixel(x, y, pixelColor);
 
-            } else {
+            //} else {
                 const Ray cameraRay = camera.generateRay(normalizedPixelPos);
                 screen.setPixel(x, y, getFinalColor(scene, bvh, cameraRay, features));
-            }
+            //}
         }
     }
 }

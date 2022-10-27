@@ -160,6 +160,11 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
+                if (config.features.extra.enableDepthOfField) {
+                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 2, 100);
+                    ImGui::SliderFloat("Focal length", &focalLength, 1.0f, 10.0f);
+                    ImGui::SliderFloat("Aperture size", &aperture, 0.005f, 0.2f);
+                }
             }
             ImGui::Separator();
 
@@ -254,6 +259,10 @@ int main(int argc, char** argv)
 
                     if (config.features.extra.enableMultipleRaysPerPixel) {
                         ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
+                    }
+
+                    if (config.features.extra.enableDepthOfField) {
+                        ImGui::Checkbox("Draw depth of field rays", &drawDebugDOF);
                     }
                         
                 }
