@@ -213,10 +213,10 @@ int main(int argc, char** argv)
                         ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
                     }
 
-                if (config.features.enableHardShadow || config.features.enableSoftShadow) {
-                    ImGui::Text("Hard (and soft) shadows");
-                    ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
-                }
+                    if (config.features.enableHardShadow || config.features.enableSoftShadow) {
+                        ImGui::Text("Hard (and soft) shadows");
+                        ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
+                    }
 
                     if (config.features.enableAccelStructure) {
                         ImGui::Text("BVH Construction");
@@ -231,23 +231,23 @@ int main(int argc, char** argv)
                         ImGui::Spacing();
                         ImGui::Text("BVH Traversal");
 
-                    ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
+                        ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
 
-                    ImGui::Checkbox("Show intersected but not visited", &showUnvisited);
-                    if (showUnvisited) {
-                        if (config.features.enableRecursive)
-                            ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, max_ray_depth + 1);
-                        else {
-                            traversalDebugDepth = 1;
-                            ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, 1);
+                        ImGui::Checkbox("Show intersected but not visited", &showUnvisited);
+                        if (showUnvisited) {
+                            if (config.features.enableRecursive)
+                                ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, max_ray_depth + 1);
+                            else {
+                                traversalDebugDepth = 1;
+                                ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, 1);
+                            }
                         }
                     }
-                }
 
-                if (ImGui::CollapsingHeader("Extra Features debug")) {
-                    ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
+                    if (ImGui::CollapsingHeader("Extra Features debug")) {
+                        ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
+                    }
                 }
-                
             }
 
             ImGui::Spacing();
