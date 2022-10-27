@@ -213,9 +213,10 @@ void drawRay(const Ray& ray, const glm::vec3& color)
 }
 
 void drawSphereCustom(float radius, glm::vec3& color, Ray& ray) { 
+    printf("%f\n", radius);
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glm::vec3 ray_dir = ray.origin+ ray.t * ray.direction; 
-    printf("%f %f %f\n", ray_dir.x, ray_dir.y, ray_dir.z);
+    // printf("%f %f %f\n", ray_dir.x, ray_dir.y, ray_dir.z);
     glTranslatef(ray_dir.x, ray_dir.y, ray_dir.z);
     glColor3fv(glm::value_ptr(color));
     GLUquadric* quadric = gluNewQuadric();
