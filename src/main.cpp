@@ -244,9 +244,18 @@ int main(int argc, char** argv)
                         }
                     }
 
-                    if (ImGui::CollapsingHeader("Extra Features debug")) {
+                    if (config.features.enableNormalInterp) {
+                        ImGui::Text("Normal Interpolation");
+                        ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
+                    }
+                }
+
+                if (ImGui::CollapsingHeader("Extra Features debug")) {
+
+                    if (config.features.extra.enableMultipleRaysPerPixel) {
                         ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
                     }
+                        
                 }
             }
 
