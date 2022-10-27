@@ -154,6 +154,9 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Texture filtering(bilinear interpolation)", &config.features.extra.enableBilinearTextureFiltering);
                 ImGui::Checkbox("Texture filtering(mipmapping)", &config.features.extra.enableMipmapTextureFiltering);
                 ImGui::Checkbox("Multiple rays per pixel", &config.features.extra.enableMultipleRaysPerPixel);
+                if (config.features.extra.enableMultipleRaysPerPixel) {
+                    ImGui::SliderInt("Subdivisions per side(real is squared)", &samplesPerPixel, 2, 4);
+                }
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);

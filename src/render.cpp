@@ -16,6 +16,8 @@ int ray_depth = 0;
 
 bool drawDebugSupersamplingRays = false;
 
+int samplesPerPixel = 2;
+
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
     HitInfo hitInfo;
@@ -81,7 +83,6 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
 
             // Check if we need to turn on multiple rays per pixel
             if (features.extra.enableMultipleRaysPerPixel) {
-                const int n = 3; // The number of total samples is represented by n * n
 
                 glm::vec3 pixelColor = glm::vec3 { 0 };
 
@@ -97,13 +98,13 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
                 * 
                 * This method retains the random property while making sure that no clusters or patterns arrise.
                 */
-                for (int p = 0; p < n; p++) {
-                    for (int q = 0; q < n; q++) {
+                for (int p = 0; p < samplesPerPixel; p++) {
+                    for (int q = 0; q < samplesPerPixel; q++) {
 
                         // Compute the position inside the pixel where this ray should go through
                         glm::vec2 samplePosition{
-                            (float(x + (float(p) + getRand()) / n) / float(windowResolution.x)) * 2.0f - 1.0f,
-                            (float(y + (float(q) + getRand()) / n) / float(windowResolution.y)) * 2.0f - 1.0f
+                            (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
+                            (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
                         };
 
                         const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
@@ -113,7 +114,7 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
                 }
 
                 // Average the values
-                pixelColor /= n * n;
+                pixelColor /= samplesPerPixel * samplesPerPixel;
                 screen.setPixel(x, y, pixelColor);
 
             } else {

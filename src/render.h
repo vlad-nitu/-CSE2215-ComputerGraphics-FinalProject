@@ -18,6 +18,8 @@ extern int ray_depth;
 
 extern bool drawDebugSupersamplingRays;
 
+extern int samplesPerPixel;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
 
