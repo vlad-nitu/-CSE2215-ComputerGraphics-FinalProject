@@ -7,8 +7,12 @@
 #include <glm/glm.hpp>
 #include <queue>
 
+// Draw the debug for the interpolated normals
 bool drawNormalInterpolationDebug = false;
+
+// Draw the debug for BVH traversal
 bool rayNodeIntersectionDebug = false;
+bool drawUnvisited = false;
 
 /*
 void BoundingVolumeHierarchy::computeAABB(Node& node)
@@ -66,13 +70,13 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 {
     // Find the mesh which contains this triangle
     int mesh = 0;
-    while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+    while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
         primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
     }
 
     // Check if the primitive is a sphere or a triangle
     if (m_pScene->meshes.size() <= mesh) {
-        Sphere sphere = m_pScene->spheres[primitiveIndex];
+        Sphere& sphere = m_pScene->spheres[primitiveIndex];
 
         // Computer the maximum and minimum coordinates of the sphere
         glm::vec3 sphereMin = sphere.center - glm::vec3 { sphere.radius };
@@ -86,9 +90,9 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
         glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
         // Get the vertices coordinates of the triangle
-        glm::vec3 v0 = m_pScene->meshes[mesh].vertices[tri[0]].position;
-        glm::vec3 v1 = m_pScene->meshes[mesh].vertices[tri[1]].position;
-        glm::vec3 v2 = m_pScene->meshes[mesh].vertices[tri[2]].position;
+        glm::vec3& v0 = m_pScene->meshes[mesh].vertices[tri[0]].position;
+        glm::vec3& v1 = m_pScene->meshes[mesh].vertices[tri[1]].position;
+        glm::vec3& v2 = m_pScene->meshes[mesh].vertices[tri[2]].position;
 
         // Update the max and min values coordinate-wise
         low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
@@ -105,7 +109,7 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 /// <param name="depth"> The depth of the given node. </param>
 void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth)
 {
-    //computeAABB(node);
+    // computeAABB(node);
 
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
@@ -174,7 +178,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& 
     }
 }
 
-BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
+BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)
     : m_pScene(pScene)
 {
     m_numLeaves = 1;
@@ -195,9 +199,9 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene)
     int primitiveIndex = 0;
     for (const auto& mesh : m_pScene->meshes) {
         for (const auto& tri : mesh.triangles) {
-            const auto v0 = mesh.vertices[tri[0]].position;
-            const auto v1 = mesh.vertices[tri[1]].position;
-            const auto v2 = mesh.vertices[tri[2]].position;
+            const auto& v0 = mesh.vertices[tri[0]].position;
+            const auto& v1 = mesh.vertices[tri[1]].position;
+            const auto& v2 = mesh.vertices[tri[2]].position;
 
             // Compute centroids
             glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
@@ -247,7 +251,7 @@ int BoundingVolumeHierarchy::numLeaves() const
     return m_numLeaves;
 }
 
-void BoundingVolumeHierarchy::showLevel(Node& node, int currentLevel, int targetLevel)
+void BoundingVolumeHierarchy::showLevel(const Node& node, int currentLevel, int targetLevel)
 {
     if (currentLevel == targetLevel) {
         AxisAlignedBox aabb { node.lower, node.upper };
@@ -272,7 +276,7 @@ void BoundingVolumeHierarchy::debugDrawLevel(int level)
 
 void BoundingVolumeHierarchy::getLeaf(int index, int& leafIdx, int& result)
 {
-    Node node = nodes[index];
+    Node& node = nodes[index];
 
     if (node.isLeaf) {
         if (leafIdx == 0)
@@ -305,13 +309,13 @@ void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
 
         // Find the mesh which contains this triangle
         int mesh = 0;
-        while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+        while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
             primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
         }
 
         // Check if the primitive is a sphere or a triangle
         if (m_pScene->meshes.size() <= mesh) {
-            Sphere sphere = m_pScene->spheres[primitiveIndex];
+            Sphere& sphere = m_pScene->spheres[primitiveIndex];
 
             drawSphere(sphere);
         } else {
@@ -319,9 +323,9 @@ void BoundingVolumeHierarchy::debugDrawLeaf(int leafIdx)
             glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
             // Get the vertices coordinates of the triangle
-            auto v0 = m_pScene->meshes[mesh].vertices[tri[0]];
-            auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
-            auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
+            auto& v0 = m_pScene->meshes[mesh].vertices[tri[0]];
+            auto& v1 = m_pScene->meshes[mesh].vertices[tri[1]];
+            auto& v2 = m_pScene->meshes[mesh].vertices[tri[2]];
 
             drawTriangle(v0, v1, v2, glm::vec3 { 1.0f, 0.2f, 0.6f });
         }
@@ -338,13 +342,13 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
 {
     // Find the mesh which contains this triangle
     int mesh = 0;
-    while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+    while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
         primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
     }
 
     // Check if the primitive is a sphere or a triangle
     if (m_pScene->meshes.size() <= mesh) {
-        Sphere sphere = m_pScene->spheres[primitiveIndex];
+        Sphere& sphere = m_pScene->spheres[primitiveIndex];
 
         if (rayNodeIntersectionDebug)
             drawSphere(sphere);
@@ -354,9 +358,9 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
         glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
         // Get the vertices coordinates of the triangle
-        auto v0 = m_pScene->meshes[mesh].vertices[tri[0]];
-        auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
-        auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
+        auto& v0 = m_pScene->meshes[mesh].vertices[tri[0]];
+        auto& v1 = m_pScene->meshes[mesh].vertices[tri[1]];
+        auto& v2 = m_pScene->meshes[mesh].vertices[tri[2]];
 
         if (rayNodeIntersectionDebug)
             drawTriangle(v0, v1, v2, glm::vec3 { 1.0f, 0.2f, 0.6f });
@@ -380,9 +384,7 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
 /// <returns> True if the origin of the ray is inside the given AABB, false otherwise</returns>
 bool BoundingVolumeHierarchy::isInAABB(Ray& ray, AxisAlignedBox& aabb) const
 {
-    return ((aabb.lower.x <= ray.origin.x && ray.origin.x <= aabb.upper.x) && 
-        (aabb.lower.y <= ray.origin.y && ray.origin.y <= aabb.upper.y) && 
-        (aabb.lower.z <= ray.origin.z && ray.origin.z <= aabb.upper.z));
+    return ((aabb.lower.x <= ray.origin.x && ray.origin.x <= aabb.upper.x) && (aabb.lower.y <= ray.origin.y && ray.origin.y <= aabb.upper.y) && (aabb.lower.z <= ray.origin.z && ray.origin.z <= aabb.upper.z));
 }
 
 /// <summary>
@@ -394,14 +396,23 @@ bool BoundingVolumeHierarchy::isInAABB(Ray& ray, AxisAlignedBox& aabb) const
 /// <param name="features"> Struct containg info about features </param>
 /// <param name="bestPrimitiveIndex"> The index of the curently intersected primitive. Is to be updated if a closer to the origin of the ray one is found </param>
 /// <returns> True if an intersection happens, false otherwise </returns>
-bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const
+bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const
 {
     bool hit = false;
 
     // Storing information about the best triangle intersection
-    Vertex bestV0 = m_pScene->meshes[0].vertices[0];
-    Vertex bestV1 = m_pScene->meshes[0].vertices[0];
-    Vertex bestV2 = m_pScene->meshes[0].vertices[0];
+    Vertex bestV0;
+    Vertex bestV1;
+    Vertex bestV2;
+    if (m_pScene->meshes.size() > 0) {
+        bestV0 = m_pScene->meshes[0].vertices[0];
+        bestV1 = m_pScene->meshes[0].vertices[0];
+        bestV2 = m_pScene->meshes[0].vertices[0];
+    } else {
+        bestV0 = Vertex();
+        bestV1 = Vertex();
+        bestV2 = Vertex();
+    }
     float bestTriangleT = ray.t;
     int bestTriangleIndex = -1;
 
@@ -420,7 +431,7 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
 
         // Find the mesh which contains this triangle
         int mesh = 0;
-        while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
+        while (m_pScene->meshes.size() > 0 && m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
             primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
         }
 
@@ -439,12 +450,12 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
 
         } else {
             // Get the triangle from the coresponding mesh
-            glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
+            glm::uvec3& tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
 
             // Get the vertices coordinates of the triangle
-            auto v0 = m_pScene->meshes[mesh].vertices[tri[0]];
-            auto v1 = m_pScene->meshes[mesh].vertices[tri[1]];
-            auto v2 = m_pScene->meshes[mesh].vertices[tri[2]];
+            auto& v0 = m_pScene->meshes[mesh].vertices[tri[0]];
+            auto& v1 = m_pScene->meshes[mesh].vertices[tri[1]];
+            auto& v2 = m_pScene->meshes[mesh].vertices[tri[2]];
 
             float oldT = ray.t;
             if (intersectRayWithTriangle(v0.position, v1.position, v2.position, ray, hitInfo)) {
@@ -465,14 +476,14 @@ bool BoundingVolumeHierarchy::testPrimitives(Node& node, Ray& ray, HitInfo& hitI
                     hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord);
 
                     hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
-
-                    if (features.enableTextureMapping) {
-                        hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
-                    }
                 } else {
                     glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
                     hitInfo.normal = (glm::dot(ray.direction, normal) > 0) ? -normal : normal;
+                }
+
+                if (features.enableTextureMapping) {
+                    hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
                 }
 
                 hitInfo.material = m_pScene->meshes[mesh].material;
@@ -505,9 +516,18 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
     if (!features.enableAccelStructure) {
         bool hit = false;
 
-        Vertex bestV0 = m_pScene->meshes[0].vertices[0];
-        Vertex bestV1 = m_pScene->meshes[0].vertices[0];
-        Vertex bestV2 = m_pScene->meshes[0].vertices[0];
+        Vertex bestV0;
+        Vertex bestV1;
+        Vertex bestV2;
+        if (m_pScene->meshes.size() > 0) {
+            bestV0 = m_pScene->meshes[0].vertices[0];
+            bestV1 = m_pScene->meshes[0].vertices[0];
+            bestV2 = m_pScene->meshes[0].vertices[0];
+        } else {
+            bestV0 = Vertex();
+            bestV1 = Vertex();
+            bestV2 = Vertex();
+        }
         float bestTriangleT = ray.t;
 
         Sphere bestSphere;
@@ -541,15 +561,14 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                         hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
 
-                        // Check if textures are turned on
-                        if (features.enableTextureMapping) {
-                            hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
-                        }
-
                     } else {
                         glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
                         hitInfo.normal = (glm::dot(ray.direction, normal) > 0) ? -normal : normal;
+                    }
+
+                    if (features.enableTextureMapping) {
+                        hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
                     }
 
                     hitInfo.material = mesh.material;
@@ -598,23 +617,31 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         std::priority_queue<Trav, std::vector<Trav>, decltype(my_comp)> queue(my_comp); // Create priority queue
 
         float oldT = ray.t;
-        bool hit = intersectRayWithShape(AxisAlignedBox { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper }, ray);
+        AxisAlignedBox rootAABB = { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper };
+        bool hit = intersectRayWithShape(rootAABB, ray);
+
+        hit |= isInAABB(ray, rootAABB);
+
         int hitIndex = -1;
 
         if (hit) {
-            Trav root = { ray.t, nodes.size() - 1 };
-            queue.push(root);
+            if (isInAABB(ray, rootAABB))
+                queue.push({ 0, (int)(nodes.size() - 1) });
+            else
+                queue.push({ ray.t, (int)(nodes.size() - 1) }); // Push root to queue
             ray.t = oldT;
 
             // For debug draw root's AABB if intersected
             if (rayNodeIntersectionDebug)
                 drawAABB(AxisAlignedBox { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper }, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
 
+            std::vector<int> unvisited;
+
             while (queue.size() > 0) {
                 Trav current = queue.top();
                 queue.pop();
 
-                Node node = nodes[current.NodeIndex];
+                const Node& node = nodes[current.NodeIndex];
 
                 // If node is leaf test its primitives, otherwise test its children
                 if (node.isLeaf) {
@@ -628,7 +655,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                             // The current AABB has potentian for a better hit
                             if (other.t <= ray.t) {
-                                Node otherNode = nodes[other.NodeIndex];
+                                const Node& otherNode = nodes[other.NodeIndex];
 
                                 if (otherNode.isLeaf) {
                                     // If the node is a leaf then test its intersection
@@ -638,20 +665,22 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                     oldT = ray.t;
 
                                     // If ray intersects AABB put into queue
-                                    if (intersectRayWithShape(leftChildBox, ray)) {
-                                        Trav leftChild ;
-                                        if (isInAABB(ray, leftChildBox)) {
-                                            leftChild = { 0, otherNode.children[0] };
-                                        } else {
-                                            leftChild = { ray.t, otherNode.children[0] };
-                                        }
+                                    Trav leftChild;
+                                    if (isInAABB(ray, leftChildBox)) {
+                                        leftChild = { 0, otherNode.children[0] };
+                                        queue.push(leftChild);
+
+                                        // For debug draw intersected node's AABB
+                                        if (rayNodeIntersectionDebug)
+                                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                                    } else if (intersectRayWithShape(leftChildBox, ray)) {
+                                        leftChild = { ray.t, otherNode.children[0] };
                                         ray.t = oldT; // No need to remember the AABB intersection t
 
                                         // For debug draw intersected node's AABB
                                         if (rayNodeIntersectionDebug)
                                             drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
 
-                                        // Add children to the queue only if they show potential for a better hit
                                         if (leftChild.t <= ray.t)
                                             queue.push(leftChild);
                                     }
@@ -659,26 +688,32 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                     AxisAlignedBox rightChildBox = { nodes[otherNode.children[1]].lower, nodes[otherNode.children[1]].upper };
                                     oldT = ray.t;
 
-                                    // If ray intersects AABB put into queue
-                                    if (intersectRayWithShape(rightChildBox, ray)) {
-                                        Trav rightChild;
-                                        if (isInAABB(ray, rightChildBox)) {
-                                            rightChild = { 0, otherNode.children[1] };
-                                        }
-                                        else {
-                                            rightChild = { ray.t, otherNode.children[1] };
-                                        }
-                                        ray.t = oldT; // No need to remember the AABB intersection t
+                                    Trav rightChild;
+                                    if (isInAABB(ray, rightChildBox)) {
+                                        rightChild = { 0, otherNode.children[1] };
+                                        queue.push(rightChild);
 
                                         // For debug draw intersected node's AABB
                                         if (rayNodeIntersectionDebug)
                                             drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                                    } else if (intersectRayWithShape(rightChildBox, ray)) {
+                                        rightChild = { ray.t, otherNode.children[1] };
+                                        ray.t = oldT;
 
-                                        // Add children to the queue only if they show potential for a better hit
+                                        if (rayNodeIntersectionDebug)
+                                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+
                                         if (rightChild.t <= ray.t)
                                             queue.push(rightChild);
                                     }
                                 }
+                            } else {
+                                /*
+                                 * The node has been intersected but since it's farther than the current best
+                                 * primitive intersection we have no reason to visit it.
+                                 */
+
+                                unvisited.push_back(other.NodeIndex);
                             }
                         }
 
@@ -686,6 +721,10 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                         if (rayNodeIntersectionDebug || drawNormalInterpolationDebug)
                             drawPrimitive(hitIndex, ray, features, hitInfo);
 
+                        if (drawUnvisited) {
+                            for (const auto unvisitedIndex : unvisited)
+                                drawAABB({ nodes[unvisitedIndex].lower, nodes[unvisitedIndex].upper }, DrawMode::Wireframe, glm::vec3 { 1.0f, 0.45f, 0.1f }, 0.4f);
+                        }
 
                         return true;
                     }
@@ -694,20 +733,22 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                     oldT = ray.t;
 
                     // If ray intersects AABB put into queue
-                    if (intersectRayWithShape(leftChildBox, ray)) {
-                        Trav leftChild;
-                        if (isInAABB(ray, leftChildBox)) {
-                            leftChild = { 0, node.children[0] };
-                        } else {
-                            leftChild = { ray.t, node.children[0] };
-                        }
+                    Trav leftChild;
+                    if (isInAABB(ray, leftChildBox)) {
+                        leftChild = { 0, node.children[0] };
+                        queue.push(leftChild);
+
+                        // For debug draw intersected node's AABB
+                        if (rayNodeIntersectionDebug)
+                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                    } else if (intersectRayWithShape(leftChildBox, ray)) {
+                        leftChild = { ray.t, node.children[0] };
                         ray.t = oldT; // No need to remember the AABB intersection t
 
                         // For debug draw intersected node's AABB
                         if (rayNodeIntersectionDebug)
                             drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
 
-                        // Add children to the queue only if they show potential for a better hit
                         if (leftChild.t <= ray.t)
                             queue.push(leftChild);
                     }
@@ -715,21 +756,21 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                     AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
                     oldT = ray.t;
 
-                    // If ray intersects AABB put into queue
-                    if (intersectRayWithShape(rightChildBox, ray)) {
-                        Trav rightChild;
-                        if (isInAABB(ray, rightChildBox)) {
-                            rightChild = { 0, node.children[1] };
-                        } else {
-                            rightChild = { ray.t, node.children[1] };
-                        }
-                        ray.t = oldT; // No need to remember the AABB intersection t
+                    Trav rightChild;
+                    if (isInAABB(ray, rightChildBox)) {
+                        rightChild = { 0, node.children[1] };
+                        queue.push(rightChild);
 
                         // For debug draw intersected node's AABB
                         if (rayNodeIntersectionDebug)
-                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 {1}, 0.4f);
+                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                    } else if (intersectRayWithShape(rightChildBox, ray)) {
+                        rightChild = { ray.t, node.children[1] };
+                        ray.t = oldT;
 
-                        // Add children to the queue only if they show potential for a better hit
+                        if (rayNodeIntersectionDebug)
+                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+
                         if (rightChild.t <= ray.t)
                             queue.push(rightChild);
                     }

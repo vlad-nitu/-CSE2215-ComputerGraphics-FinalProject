@@ -8,7 +8,9 @@
 struct Scene;
 
 extern bool drawNormalInterpolationDebug;
+
 extern bool rayNodeIntersectionDebug;
+extern bool drawUnvisited;
 
 struct Node {
     bool isLeaf; // false for interior node and true for leafs.
@@ -61,7 +63,7 @@ private:
 
     void subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth);
 
-    void showLevel(Node& node, int currentLevel, int targetLevel);
+    void showLevel(const Node& node, int currentLevel, int targetLevel);
 
     void getLeaf(int index, int& leafIdx, int& result);
 
@@ -69,11 +71,11 @@ private:
 
     bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
 
-    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
+    bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
-    BoundingVolumeHierarchy(Scene* pScene);
+    BoundingVolumeHierarchy(Scene* pScene, const Features& features);
 
     // Return how many levels there are in the tree that you have constructed.
     [[nodiscard]] int numLevels() const;

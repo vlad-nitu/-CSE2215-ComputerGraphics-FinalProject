@@ -7,28 +7,68 @@
 #include <glm/gtc/random.hpp> // Ask TA if this is allowed
 #include <random> // Ask Ta if this is allowed
 
+
+// Import in order to perform second visual debug for BVH traversal
+#include <bounding_volume_hierarchy.h> // Ask TAs if allowed
+
 #ifdef NDEBUG
 #include <omp.h>
 #endif
 
+// Change the color of the ray according to Phong Shading model
 bool drawDebugShading = false;
-int ray_depth = 0;
 
+// Change the maximul allowed ray depth
+int max_ray_depth = 2;
+
+// The level in the recursion tree of which to show the intersected but unvisited nodes of the BVH
+bool showUnvisited = false;
+int traversalDebugDepth = 1;
+
+// Debug for supersampling
 bool drawDebugSupersamplingRays = false;
+int samplesPerPixel = 2; // Sample size per pixel
 
-int samplesPerPixel = 2;
+// Set focal length for depth of field
+float focalLength = 4.0f;
+float aperture = 0.05f;
+int DOFsamples = 1;
 
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
     HitInfo hitInfo;
+
+    if (showUnvisited) {
+        if (rayDepth == traversalDebugDepth)
+            drawUnvisited = true;
+        else
+            drawUnvisited = false;
+    } else {
+        drawUnvisited = false;
+    }
+    
     if (bvh.intersect(ray, hitInfo, features)) {
 
         glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
 
-
         if (features.enableRecursive) {
             Ray reflection = computeReflectionRay(ray, hitInfo);
-            // TODO: put your own implementation of recursive ray tracing here.
+
+            if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 } && rayDepth <= max_ray_depth) {
+                float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
+                Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+            }
+        }
+
+        // Check if therays come from the camera
+        if (rayDepth == 1) {
+            // Implement DOF
+            if (features.extra.enableDepthOfField) {
+             
+                Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
+
+                Lo /= (DOFsamples + 1);
+            }
         }
 
         // Draw a debug ray with the color returned from the shading.
@@ -37,7 +77,7 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         } else {
             drawRay(ray, glm::vec3 { 1 });
         }
-        
+
         // Set the color of the pixel.
         return Lo;
     } else {
@@ -66,6 +106,22 @@ float getRand(float x, float y)
     return dis(gen);
 }
 
+glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, const Features& features, int rayDepth)
+{
+    glm::vec3 color = glm::vec3 { 0 };
+    glm::vec3 focalPoint = ray.origin + focalLength * ray.direction;
+
+    for (int i = 0; i < DOFsamples; i++) {
+        glm::vec3 randomLense = ray.origin + glm::vec3 { getRand(-aperture, aperture), getRand(-aperture, aperture), getRand(-aperture, aperture) };
+
+        Ray newRay = { randomLense, glm::normalize(focalPoint - randomLense), std::numeric_limits<float>::max() };
+
+        color += getFinalColor(scene, bvh, newRay, features, rayDepth + 1);
+    }
+
+    return color;
+}
+
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features)
 {
     glm::ivec2 windowResolution = screen.resolution();
@@ -82,45 +138,45 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
             };
 
             // Check if we need to turn on multiple rays per pixel
-            if (features.extra.enableMultipleRaysPerPixel) {
+            //if (features.extra.enableMultipleRaysPerPixel) {
 
-                glm::vec3 pixelColor = glm::vec3 { 0 };
+            //    glm::vec3 pixelColor = glm::vec3 { 0 };
 
-                /*
-                * Implementaion taken from:
-                * 
-                * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
-                * Chapter 13.4.1
-                * 
-                * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
-                * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
-                * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
-                * 
-                * This method retains the random property while making sure that no clusters or patterns arrise.
-                */
-                for (int p = 0; p < samplesPerPixel; p++) {
-                    for (int q = 0; q < samplesPerPixel; q++) {
+            //    /*
+            //    * Implementaion taken from:
+            //    * 
+            //    * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
+            //    * Chapter 13.4.1
+            //    * 
+            //    * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
+            //    * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
+            //    * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
+            //    * 
+            //    * This method retains the random property while making sure that no clusters or patterns arrise.
+            //    */
+            //    for (int p = 0; p < samplesPerPixel; p++) {
+            //        for (int q = 0; q < samplesPerPixel; q++) {
 
-                        // Compute the position inside the pixel where this ray should go through
-                        glm::vec2 samplePosition{
-                            (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
-                            (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
-                        };
+            //            // Compute the position inside the pixel where this ray should go through
+            //            glm::vec2 samplePosition{
+            //                (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
+            //                (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
+            //            };
 
-                        const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
+            //            const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
 
-                        pixelColor += getFinalColor(scene, bvh, sampleRay, features);
-                    }
-                }
+            //            pixelColor += getFinalColor(scene, bvh, sampleRay, features);
+            //        }
+            //    }
 
-                // Average the values
-                pixelColor /= samplesPerPixel * samplesPerPixel;
-                screen.setPixel(x, y, pixelColor);
+            //    // Average the values
+            //    pixelColor /= samplesPerPixel * samplesPerPixel;
+            //    screen.setPixel(x, y, pixelColor);
 
-            } else {
+            //} else {
                 const Ray cameraRay = camera.generateRay(normalizedPixelPos);
                 screen.setPixel(x, y, getFinalColor(scene, bvh, cameraRay, features));
-            }
+            //}
         }
     }
 }

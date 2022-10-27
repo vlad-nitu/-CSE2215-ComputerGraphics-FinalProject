@@ -66,7 +66,7 @@ int main(int argc, char** argv)
         SceneType sceneType { SceneType::SingleTriangle };
         std::optional<Ray> optDebugRay;
         Scene scene = loadScenePrebuilt(sceneType, config.dataPath);
-        BvhInterface bvh { &scene };
+        BvhInterface bvh { &scene, config.features };
 
         int bvhDebugLevel = 0;
         int bvhDebugLeaf = 0;
@@ -119,7 +119,7 @@ int main(int argc, char** argv)
                     optDebugRay.reset();
                     scene = loadScenePrebuilt(sceneType, config.dataPath);
                     selectedLightIdx = scene.lights.empty() ? -1 : 0;
-                    bvh = BvhInterface(&scene);
+                    bvh = BvhInterface(&scene, config.features);
                     if (optDebugRay) {
                         HitInfo dummy {};
                         bvh.intersect(*optDebugRay, dummy, config.features);
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Shading", &config.features.enableShading);
                 ImGui::Checkbox("Recursive(reflections)", &config.features.enableRecursive);
                 if (config.features.enableRecursive) {
-                    ImGui::SliderInt("Ray depth", &ray_depth, 0, 10);
+                    ImGui::SliderInt("Number of reflections", &max_ray_depth, 2, 10);
                 }
 
                 ImGui::Checkbox("Hard shadows", &config.features.enableHardShadow);
@@ -160,6 +160,11 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
+                if (config.features.extra.enableDepthOfField) {
+                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 1, 100);
+                    ImGui::SliderFloat("Focal length", &focalLength, 1.0f, 10.0f);
+                    ImGui::SliderFloat("Aperture size", &aperture, 0.005f, 0.2f);
+                }
             }
             ImGui::Separator();
 
@@ -213,9 +218,9 @@ int main(int argc, char** argv)
                         ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
                     }
 
-                    if (config.features.enableHardShadow) {
-                        ImGui::Text("Hard shadows");
-                        ImGui::Checkbox("Draw shadow ray", &drawShadowRayDebug);
+                    if (config.features.enableHardShadow || config.features.enableSoftShadow) {
+                        ImGui::Text("Hard (and soft) shadows");
+                        ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
                     }
 
                     if (config.features.enableAccelStructure) {
@@ -232,6 +237,16 @@ int main(int argc, char** argv)
                         ImGui::Text("BVH Traversal");
 
                         ImGui::Checkbox("Show ray-node intersection", &rayNodeIntersectionDebug);
+
+                        ImGui::Checkbox("Show intersected but not visited", &showUnvisited);
+                        if (showUnvisited) {
+                            if (config.features.enableRecursive)
+                                ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, max_ray_depth + 1);
+                            else {
+                                traversalDebugDepth = 1;
+                                ImGui::SliderInt("Ray depth", &traversalDebugDepth, 1, 1);
+                            }
+                        }
                     }
 
                     if (config.features.enableNormalInterp) {
@@ -241,9 +256,12 @@ int main(int argc, char** argv)
                 }
 
                 if (ImGui::CollapsingHeader("Extra Features debug")) {
-                    ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
+
+                    if (config.features.extra.enableMultipleRaysPerPixel) {
+                        ImGui::Checkbox("Draw supersampling rays", &drawDebugSupersamplingRays);
+                    }
+                        
                 }
-                
             }
 
             ImGui::Spacing();
@@ -433,7 +451,7 @@ int main(int argc, char** argv)
                        }),
             config.scene);
 
-        BvhInterface bvh { &scene };
+        BvhInterface bvh { &scene, config.features };
 
         using clock = std::chrono::high_resolution_clock;
         // Create output directory if it does not exist.
