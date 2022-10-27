@@ -36,7 +36,7 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
 
 float getRand(float x = 0.0f, float y = 1.0f - std::numeric_limits<float>::epsilon());
 
-glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features);
+glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, const Features& features, const int rayDepth);
 
 // Get the color of a ray.
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth = 1);

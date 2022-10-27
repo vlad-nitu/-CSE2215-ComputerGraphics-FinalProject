@@ -136,7 +136,7 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Shading", &config.features.enableShading);
                 ImGui::Checkbox("Recursive(reflections)", &config.features.enableRecursive);
                 if (config.features.enableRecursive) {
-                    ImGui::SliderInt("Number of reflections", &max_ray_depth, 1, 10);
+                    ImGui::SliderInt("Number of reflections", &max_ray_depth, 2, 10);
                 }
 
                 ImGui::Checkbox("Hard shadows", &config.features.enableHardShadow);
@@ -161,7 +161,7 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
-                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 2, 100);
+                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 1, 100);
                     ImGui::SliderFloat("Focal length", &focalLength, 1.0f, 10.0f);
                     ImGui::SliderFloat("Aperture size", &aperture, 0.005f, 0.2f);
                 }

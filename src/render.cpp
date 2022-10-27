@@ -19,7 +19,7 @@
 bool drawDebugShading = false;
 
 // Change the maximul allowed ray depth
-int max_ray_depth = 1;
+int max_ray_depth = 2;
 
 // The level in the recursion tree of which to show the intersected but unvisited nodes of the BVH
 bool showUnvisited = false;
@@ -32,9 +32,8 @@ int samplesPerPixel = 2; // Sample size per pixel
 // Set focal length for depth of field
 float focalLength = 4.0f;
 float aperture = 0.05f;
-int DOFsamples = 2;
+int DOFsamples = 1;
 bool drawDebugDOF = false;
-bool alreadySampled = false;
 
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
@@ -48,7 +47,7 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
     } else {
         drawUnvisited = false;
     }
-
+    
     if (bvh.intersect(ray, hitInfo, features)) {
 
         glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
@@ -63,13 +62,11 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         }
 
         // Check if therays come from the camera
-        if (rayDepth == 1 && !alreadySampled) {
-
+        if (rayDepth == 1) {
             // Implement DOF
             if (features.extra.enableDepthOfField) {
-                alreadySampled = true;
-                Lo += pixelColorDOF(scene, bvh, ray, features);
-                alreadySampled = false;
+             
+                Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
 
                 Lo /= (DOFsamples + 1);
             }
@@ -110,7 +107,7 @@ float getRand(float x, float y)
     return dis(gen);
 }
 
-glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features)
+glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, const Features& features, int rayDepth)
 {
     glm::vec3 color = glm::vec3 { 0 };
     glm::vec3 focalPoint = ray.origin + focalLength * ray.direction;
@@ -118,9 +115,9 @@ glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray ray, co
     for (int i = 0; i < DOFsamples; i++) {
         glm::vec3 randomLense = ray.origin + glm::vec3 { getRand(-aperture, aperture), getRand(-aperture, aperture), getRand(-aperture, aperture) };
 
-        Ray newRay = { randomLense, glm::normalize(focalPoint - randomLense) };
+        Ray newRay = { randomLense, glm::normalize(focalPoint - randomLense), std::numeric_limits<float>::max() };
 
-        color += getFinalColor(scene, bvh, newRay, features);
+        color += getFinalColor(scene, bvh, newRay, features, rayDepth + 1);
     }
 
     return color;
