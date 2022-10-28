@@ -81,6 +81,9 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
         Node rightChild = Node(true);
         m_numLeaves += 2; // Children are by default leafs
 
+
+
+
         // Sort method taken from https://en.cppreference.com/w/cpp/algorithm/sort
         /*
          * Sort the indices based on the centroids by the current axis in order to find the median one.
@@ -132,6 +135,11 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
     }
 }
 
+// void constructSAH(Scene* pScene, const Features& features){ 
+//     std::vector<glm::vec3> centroids;
+
+// }
+
 BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)
     : m_pScene(pScene)
 {
@@ -144,6 +152,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      * Follows the same ordering as for the flattened list of triangles used in the node struct
      */
     std::vector<glm::vec3> centroids;
+    std::vector<AxisAlignedBox> centroids_AABB; 
 
     Node root = Node(true);
 
@@ -153,15 +162,24 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     int primitiveIndex = 0;
     for (const auto& mesh : m_pScene->meshes) {
         for (const auto& tri : mesh.triangles) {
+            
+            glm::vec3 low_triangle = glm::vec3 { std::numeric_limits<float>::max() };
+            glm::vec3 high_triangle = glm::vec3 { -std::numeric_limits<float>::max() };
+
             const auto& v0 = mesh.vertices[tri[0]].position;
             const auto& v1 = mesh.vertices[tri[1]].position;
             const auto& v2 = mesh.vertices[tri[2]].position;
 
             // Compute centroids
             glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
-            centroids.push_back(centre);
+            if (features.enableAccelStructure)
+                centroids.push_back(centre);
+            else{
+                 AxisAlignedBox aabb {low_triangle, high_triangle};
+                centroids.push_back(aabb.);
+            }
 
-            // Compute root's AABB boundry
+            // Compute root's AABB boundary
             low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
             high = glm::max(high, glm::max(v0, glm::max(v1, v2)));
 
@@ -189,6 +207,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.upper = high;
 
     subdivideNode(root, centroids, 0, 0);
+}
 }
 
 // Return the depth of the tree that you constructed. This is used to tell the
