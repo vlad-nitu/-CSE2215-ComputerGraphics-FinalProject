@@ -22,20 +22,15 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
 
 glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord,  const Features& features)
 { 
-    glm::vec2 texelPos { (image.width - 1) * texCoord.x, (image.height - 1) * texCoord.y};
+    glm::vec2 texelPos { (image.width - 1) * texCoord[0], (image.height - 1) * texCoord[1]};
 
     int clamp_texel_x = (int) texelPos.x;
     int clamp_texel_y = (int) texelPos.y;
 
     glm::vec2 upper_left {clamp_texel_x, clamp_texel_y}; 
-
-    glm::vec2 upper_right {upper_left.x - 1, upper_left.y};
-
-
-    glm::vec2 lower_left {upper_left.x, upper_left.y - 1}; 
-
-
-    glm::vec2 lower_right {upper_left.x - 1, upper_left.y - 1}; 
+    glm::vec2 upper_right {upper_left.x + 1, upper_left.y};
+    glm::vec2 lower_left {upper_left.x, upper_left.y + 1}; 
+    glm::vec2 lower_right {upper_left.x + 1, upper_left.y + 1}; 
 
 
     glm::vec3 upper_left_color = image.pixels[upper_left.y * image.width + upper_left.x];
@@ -48,9 +43,9 @@ glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, 
     float betta = texelPos.y - upper_left.y;  
     
     glm::vec3 interpolated_texCoord = upper_left_color * glm::vec3{(1-alpha) * (1-betta)}
-     + lower_left_color  * glm::vec3{alpha * (1 - betta)} 
-     + upper_right_color * glm::vec3{(1-alpha) * betta} 
+     + lower_left_color  * glm::vec3{ (1 - alpha) * betta} 
+     + upper_right_color * glm::vec3{ alpha * (1 - betta) } 
      + lower_right_color * glm::vec3{alpha * betta}; 
 
-        return interpolated_texCoord; 
+    return interpolated_texCoord; 
 }
