@@ -175,8 +175,10 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
             if (features.enableAccelStructure)
                 centroids.push_back(centre);
             else{
-                 AxisAlignedBox aabb {low_triangle, high_triangle};
-                centroids.push_back(aabb.);
+                low_triangle = glm::min(v0, glm::min(v1, v2));
+                high_triangle = glm::max(v0, glm::min(v1, v2));
+                AxisAlignedBox aabb {low_triangle, high_triangle};
+                centroids_AABB.push_back(aabb);
             }
 
             // Compute root's AABB boundary
