@@ -57,11 +57,9 @@ struct Node {
 
 class BoundingVolumeHierarchy {
 private:
-    //void computeAABB(Node& node);
-
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
-    void subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth);
+    void subdivideNode(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth);
 
     void showLevel(const Node& node, int currentLevel, int targetLevel);
 
