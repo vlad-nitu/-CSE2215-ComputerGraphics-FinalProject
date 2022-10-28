@@ -336,7 +336,7 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
 /// <param name="ray"> The ray that is to be checked </param>
 /// <param name="aabb"> The AABB which is to be determined if it contains the origin of the ray</param>
 /// <returns> True if the origin of the ray is inside the given AABB, false otherwise</returns>
-bool BoundingVolumeHierarchy::isInAABB(Ray& ray, AxisAlignedBox& aabb) const
+bool BoundingVolumeHierarchy::isInAABB(const Ray& ray, const AxisAlignedBox& aabb) const
 {
     return ((aabb.lower.x <= ray.origin.x && ray.origin.x <= aabb.upper.x) && (aabb.lower.y <= ray.origin.y && ray.origin.y <= aabb.upper.y) && (aabb.lower.z <= ray.origin.z && ray.origin.z <= aabb.upper.z));
 }
@@ -583,11 +583,9 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 queue.push({ ray.t, (int)(nodes.size() - 1) }); // Push root to queue
             ray.t = oldT;
 
-            std::vector<int> unvisited;
-
             // Go through the tree until no better options are available
             while (queue.size() > 0) {
-                Trav current = queue.top();
+                const Trav current = queue.top();
                 queue.pop();
                 const Node& node = nodes[current.NodeIndex];
 
@@ -604,7 +602,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                         // Node has left child
                         if (node.children.size() > 0) {
-                            AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
+                            const AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
                             oldT = ray.t;
 
                             if (isInAABB(ray, leftChildBox)) {
@@ -624,7 +622,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                         // Node has right child
                         if (node.children.size() > 1) {
-                            AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
+                            const AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
                             oldT = ray.t;
 
                             if (isInAABB(ray, rightChildBox)) {

@@ -67,7 +67,7 @@ private:
 
     void drawPrimitive(int primitiveIndex, const Ray& ray, const Features& features, const HitInfo& hitInfo) const;
 
-    bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
+    bool isInAABB(const Ray& ray, const AxisAlignedBox& aabb) const;
 
     bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
