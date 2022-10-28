@@ -12,7 +12,6 @@ DISABLE_WARNINGS_POP()
 
 // Forward declarations.
 struct Image;
-extern int mipmap_max_depth;
 
 extern bool drawMipMapDebug;
 namespace std {
@@ -28,6 +27,7 @@ namespace std {
     };
 }
 extern std::unordered_map<Image, std::vector<Image> > map; 
+extern int mipmap_max_depth;
 
 // Given an image and a texture coordinate, return the corresponding texel.
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features);

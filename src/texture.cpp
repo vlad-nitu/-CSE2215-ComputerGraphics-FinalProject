@@ -7,6 +7,7 @@
 
 bool drawMipMapDebug = false;
 std::unordered_map<Image, std::vector<Image> > map; 
+int mipmap_max_depth;
 
 /*
 Create MipMap w/ 5 levels, where initial_image is on level 0 (root) 

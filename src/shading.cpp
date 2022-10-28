@@ -5,7 +5,6 @@
 #include "draw.h"
 
 bool drawReflectionDebug = false;
-int mipmap_max_depth = 0;
 
 std::vector<Image> createImages(const Image& image) { 
 
@@ -59,19 +58,18 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
             int level = ray.t / 2; 
             Image& img = *hitInfo.material.kdTexture;
             
-            int mipmap_max_depth = std::log2(img.height);
+            mipmap_max_depth = std::log2(img.height);
             // printf("%d\n", mipmap_max_depth);
             if (map.find(img) == map.end())
                 map[img] = createImages(img);
 
             // printf("%lu ", map.size());
-
             // printf("%d %d\n", map[img][level].width, map[img][level].height); 
 
             if (level > mipmap_max_depth)
                 level = mipmap_max_depth;
 
-            glm::vec3 kd = acquireTexel(img, hitInfo.texCoord, features, level, ray);
+            glm::vec3 kd = acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray);
 
             if (features.enableTextureMapping && hitInfo.material.kdTexture)
                 return lightColor * kd * dotProduct;
