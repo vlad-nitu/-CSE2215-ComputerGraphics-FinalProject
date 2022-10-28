@@ -44,10 +44,10 @@ glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, 
     clampTexel(lower_right, image);
 
 
-    glm::vec3 upper_left_color = image.pixels[upper_left.y * image.width + upper_left.x];
-    glm::vec3 upper_right_color = image.pixels[upper_right.y * image.width + upper_right.x];
-    glm::vec3 lower_left_color = image.pixels[lower_left.y * image.width + lower_left.x];
-    glm::vec3 lower_right_color = image.pixels[lower_right.y * image.width + lower_right.x];
+    glm::vec3 upper_left_color = image.pixels[(image.height - upper_left.y - 1) * image.width + upper_left.x];
+    glm::vec3 upper_right_color = image.pixels[(image.height - upper_right.y - 1) * image.width + upper_right.x];
+    glm::vec3 lower_left_color = image.pixels[(image.height - lower_left.y - 1) * image.width + lower_left.x];
+    glm::vec3 lower_right_color = image.pixels[(image.height - lower_right.y - 1) * image.width + lower_right.x];
 
 
     float alpha = texelPos.x - upper_left.x;
