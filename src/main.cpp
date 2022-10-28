@@ -242,7 +242,7 @@ int main(int argc, char** argv)
                         ImGui::Checkbox("Draw reflection", &drawReflectionDebug);
                     }
 
-                    if (ImGui::CollapsingHeader("Hard (and soft) shadows") && config.features.enableHardShadow || config.features.enableSoftShadow) {
+                    if (ImGui::CollapsingHeader("Hard (and soft) shadows") && (config.features.enableHardShadow || config.features.enableSoftShadow)) {
                         ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
                     }
 
@@ -272,12 +272,11 @@ int main(int argc, char** argv)
                         }
                     }
 
-                    if (ImGui::CollapsingHeader("Shading debug") && config.features.enableNormalInterp) {
-                        ImGui::Text("Normal Interpolation");
+                    if (ImGui::CollapsingHeader("Interpolated normal") && config.features.enableNormalInterp) {
                         ImGui::Checkbox("Draw interpolated normal", &drawNormalInterpolationDebug);
                     }
 
-                    if (ImGui::CollapsingHeader("Texture debug") && config.features.enableTextureMapping) {
+                    if (ImGui::CollapsingHeader("Texture") && config.features.enableTextureMapping) {
                         // Insert debug config
                     }
                 }
