@@ -4,6 +4,9 @@
 #include "screen.h"
 #include <framework/trackball.h>
 
+#include <glm/gtc/random.hpp> // Ask TA if this is allowed
+#include <random> // Ask Ta if this is allowed
+
 // Import in order to perform second visual debug for BVH traversal
 #include <bounding_volume_hierarchy.h> // Ask TAs if allowed
 
@@ -15,11 +18,20 @@
 bool drawDebugShading = false;
 
 // Change the maximul allowed ray depth
-int max_ray_depth = 1;
+int max_ray_depth = 2;
 
 // The level in the recursion tree of which to show the intersected but unvisited nodes of the BVH
 bool showUnvisited = false;
 int traversalDebugDepth = 1;
+
+// Debug for supersampling
+bool drawDebugSupersamplingRays = false;
+int samplesPerPixel = 2; // Sample size per pixel
+
+// Set focal length for depth of field
+float focalLength = 4.0f;
+float aperture = 0.05f;
+int DOFsamples = 1;
 
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
@@ -47,6 +59,17 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
             }
         }
 
+        // Check if therays come from the camera
+        if (rayDepth == 1) {
+            // Implement DOF
+            if (features.extra.enableDepthOfField) {
+
+                Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
+
+                Lo /= (DOFsamples + 1);
+            }
+        }
+
         // Draw a debug ray with the color returned from the shading.
         if (drawDebugShading) {
             drawRay(ray, Lo);
@@ -64,8 +87,41 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
     }
 }
 
-void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen,
-    const Features& features)
+/// <summary>
+/// Generates a random float value between x and y inclusive. By default returns in [0, 1)
+/// </summary>
+/// <param name="x"> Lower bound, by default 0 </param>
+/// <param name="y"> Upper bound, by default 1 - max_epsilon </param>
+/// <returns> Returns a random float </returns>
+float getRand(float x, float y)
+{
+    // return glm::linearRand(x, y);
+
+    // Implementation taken from https://en.cppreference.com/w/cpp/numeric/random/uniform_real_distribution
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(x, y);
+
+    return dis(gen);
+}
+
+glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, const Features& features, int rayDepth)
+{
+    glm::vec3 color = glm::vec3 { 0 };
+    glm::vec3 focalPoint = ray.origin + focalLength * ray.direction;
+
+    for (int i = 0; i < DOFsamples; i++) {
+        glm::vec3 randomLense = ray.origin + glm::vec3 { getRand(-aperture, aperture), getRand(-aperture, aperture), getRand(-aperture, aperture) };
+
+        Ray newRay = { randomLense, glm::normalize(focalPoint - randomLense), std::numeric_limits<float>::max() };
+
+        color += getFinalColor(scene, bvh, newRay, features, rayDepth + 1);
+    }
+
+    return color;
+}
+
+void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features)
 {
     glm::ivec2 windowResolution = screen.resolution();
     // Enable multi threading in Release mode
@@ -79,8 +135,47 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
                 float(x) / float(windowResolution.x) * 2.0f - 1.0f,
                 float(y) / float(windowResolution.y) * 2.0f - 1.0f
             };
-            const Ray cameraRay = camera.generateRay(normalizedPixelPos);
-            screen.setPixel(x, y, getFinalColor(scene, bvh, cameraRay, features));
+
+            // Check if we need to turn on multiple rays per pixel
+            if (features.extra.enableMultipleRaysPerPixel) {
+
+                glm::vec3 pixelColor = glm::vec3 { 0 };
+
+                /*
+                 * Implementaion taken from:
+                 *
+                 * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
+                 * Chapter 13.4.1
+                 *
+                 * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
+                 * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
+                 * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
+                 *
+                 * This method retains the random property while making sure that no clusters or patterns arrise.
+                 */
+                for (int p = 0; p < samplesPerPixel; p++) {
+                    for (int q = 0; q < samplesPerPixel; q++) {
+
+                        // Compute the position inside the pixel where this ray should go through
+                        glm::vec2 samplePosition {
+                            (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
+                            (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
+                        };
+
+                        const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
+
+                        pixelColor += getFinalColor(scene, bvh, sampleRay, features);
+                    }
+                }
+
+                // Average the values
+                pixelColor /= samplesPerPixel * samplesPerPixel;
+                screen.setPixel(x, y, pixelColor);
+
+            } else {
+                const Ray cameraRay = camera.generateRay(normalizedPixelPos);
+                screen.setPixel(x, y, getFinalColor(scene, bvh, cameraRay, features));
+            }
         }
     }
 }

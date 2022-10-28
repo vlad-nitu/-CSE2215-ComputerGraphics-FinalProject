@@ -11,6 +11,8 @@ DISABLE_WARNINGS_POP()
 bool drawShadowRayDebug = false;
 bool useConstantSeed = false;
 
+int SAMPLE_COUNT = 100;
+
 // Constant seed used when debugging (for sampling the line-segment and parallelogram light sources)
 // N.B.: Not using a dynamically-computed seed (the random device and the seed are computed only once every run)
 // Otherwise, once the project is run, the shadow rays would be continuously recalculated, and debugging would be difficult.
@@ -117,10 +119,6 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
         // If shading is enabled, compute the contribution from all lights.
 
         glm::vec3 result = glm::vec3 { 0.0f };
-
-        // Number of samples taken from a given light source (only for line-segment and parallelogram light sources)
-        // N.B.: A larger value reduces the noise in the rendered image yet also makes the rendering process slower!
-        const int SAMPLE_COUNT = 100;
 
         // Dynamically-computed seed used when rendering (for sampling the line-segment and parallelogram light sources)
         std::random_device rdDynamic;
