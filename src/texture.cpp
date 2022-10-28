@@ -5,50 +5,12 @@
 #include <cmath>
 #include "draw.h"
 
-int mipmap_max_depth = 0;
 bool drawMipMapDebug = false;
+std::unordered_map<Image, std::vector<Image> > map; 
 
 /*
 Create MipMap w/ 5 levels, where initial_image is on level 0 (root) 
 */
-std::vector<Image> createImages(const Image& image) { 
-
-    std::vector<Image> images{};
-    images.push_back(image); 
-    for (int lvl = 1; lvl <= mipmap_max_depth; ++lvl) { 
-
-        const Image& prev_image = images.back(); 
-
-        int prev_w = prev_image.width;
-        int prev_h = prev_image.height;
-
-        int new_w = prev_w / 2;
-        int new_h = prev_h / 2;
-
-
-        std::vector<glm::vec3> new_pixels {}; 
-
-        int x, y;
-        x = y = 0;
-        int grid_size = prev_h * prev_w;
-
-        while (y < grid_size) {
-
-            glm::vec3 interpolated_pixel = (prev_image.pixels[x] + prev_image.pixels[x + 1] + prev_image.pixels[x + prev_w] + prev_image.pixels[x + prev_w + 1]) / 4.0f;  
-            new_pixels.push_back(interpolated_pixel);
-
-            if (x < prev_w)
-                x += 2;
-            else{
-                x = 0; y += 2 * prev_w;
-            }
-        }
-
-        Image new_image = Image(new_w, new_h, new_pixels);
-        images.push_back(new_image);
-    }
-    return images;
-}
 
 void debugDrawMipMapLevel(int level, Ray& ray) { 
 
@@ -85,12 +47,6 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
 
     if (features.extra.enableMipmapTextureFiltering)
         {
-            mipmap_max_depth = std::log2(img.height);
-            std::vector<Image> images = createImages(image);
-            if (level > mipmap_max_depth)
-                level = mipmap_max_depth;
-            img = images[level];
-
              if (drawMipMapDebug)
                 debugDrawMipMapLevel(level, ray); 
         }

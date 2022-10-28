@@ -5,6 +5,47 @@
 #include "draw.h"
 
 bool drawReflectionDebug = false;
+int mipmap_max_depth = 0;
+
+std::vector<Image> createImages(const Image& image) { 
+
+    std::vector<Image> images{};
+    images.push_back(image); 
+
+    for (int lvl = 1; lvl <= mipmap_max_depth; ++lvl) { 
+
+        const Image& prev_image = images.back(); 
+
+        int prev_w = prev_image.width;
+        int prev_h = prev_image.height;
+
+        int new_w = prev_w / 2;
+        int new_h = prev_h / 2;
+
+
+        std::vector<glm::vec3> new_pixels {}; 
+
+        int x, y;
+        x = y = 0;
+        int grid_size = prev_h * prev_w;
+
+        while (y < grid_size) {
+
+            glm::vec3 interpolated_pixel = (prev_image.pixels[x] + prev_image.pixels[x + 1] + prev_image.pixels[x + prev_w] + prev_image.pixels[x + prev_w + 1]) / 4.0f;  
+            new_pixels.push_back(interpolated_pixel);
+
+            if (x < prev_w)
+                x += 2;
+            else{
+                x = 0; y += 2 * prev_w;
+            }
+        }
+
+        Image new_image = Image(new_w, new_h, new_pixels);
+        images.push_back(new_image);
+    }
+    return images;
+}
 
 const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& lightColor, const Features& features, Ray ray, HitInfo hitInfo)
 {
@@ -16,7 +57,21 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
 
     if (features.extra.enableMipmapTextureFiltering){
             int level = ray.t / 2; 
-            glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features, level, ray);
+            Image& img = *hitInfo.material.kdTexture;
+            
+            int mipmap_max_depth = std::log2(img.height);
+            // printf("%d\n", mipmap_max_depth);
+            if (map.find(img) == map.end())
+                map[img] = createImages(img);
+
+            // printf("%lu ", map.size());
+
+            // printf("%d %d\n", map[img][level].width, map[img][level].height); 
+
+            if (level > mipmap_max_depth)
+                level = mipmap_max_depth;
+
+            glm::vec3 kd = acquireTexel(img, hitInfo.texCoord, features, level, ray);
 
             if (features.enableTextureMapping && hitInfo.material.kdTexture)
                 return lightColor * kd * dotProduct;

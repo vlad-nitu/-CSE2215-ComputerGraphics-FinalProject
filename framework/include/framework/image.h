@@ -13,6 +13,11 @@ public:
     explicit Image(const std::filesystem::path& filePath);
     Image(int width, int height, std::vector<glm::vec3> pixels) : width(width), height(height), pixels(pixels){}
 
+    // `operator==` is required to compare keys in case of a hash collision
+    inline bool operator==(const Image &img) const {
+        return width == img.width && height == img.height && pixels == img.pixels;
+    }
+
 public:
     int width, height;
     std::vector<glm::vec3> pixels;
