@@ -14,7 +14,11 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
     if (features.enableTextureMapping && hitInfo.material.kdTexture) {
-        glm::vec3 kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
+        glm::vec3 kd; 
+        if (features.extra.enableBilinearTextureFiltering)
+            kd = bilinearInterpolation(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
+        else
+            kd = acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
 
         return lightColor * kd * dotProduct;
     } else {
@@ -61,7 +65,10 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
         return shading;
     } else {
         if (features.enableTextureMapping && hitInfo.material.kdTexture) {
-            return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
+            if (features.extra.enableBilinearTextureFiltering)
+                return bilinearInterpolation(*hitInfo.material.kdTexture, hitInfo.texCoord, features); 
+            else
+                return acquireTexel(*hitInfo.material.kdTexture, hitInfo.texCoord, features);
         } else {
             return hitInfo.material.kd;
         }
