@@ -20,17 +20,31 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
     return image.pixels[row * image.width + col];
 }
 
+void clampTexel(glm::vec2& center, const Image& image) {
+    if (center.x == image.width)
+        center.x --;
+    if (center.y == image.height)
+        center.y --; 
+}
+
 glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord,  const Features& features)
 { 
-    glm::vec2 texelPos { (image.width - 1) * texCoord[0], (image.height - 1) * texCoord[1]};
+    glm::vec2 texelPos { (image.width - 1) * texCoord.x, (image.height - 1) * texCoord.y};
 
     int clamp_texel_x = (int) texelPos.x;
     int clamp_texel_y = (int) texelPos.y;
 
     glm::vec2 upper_left {clamp_texel_x, clamp_texel_y}; 
+    clampTexel(upper_left, image);
+
     glm::vec2 upper_right {upper_left.x + 1, upper_left.y};
+    clampTexel(upper_right, image);
+
     glm::vec2 lower_left {upper_left.x, upper_left.y + 1}; 
+    clampTexel(lower_left, image);
+
     glm::vec2 lower_right {upper_left.x + 1, upper_left.y + 1}; 
+    clampTexel(lower_right, image);
 
 
     glm::vec3 upper_left_color = image.pixels[upper_left.y * image.width + upper_left.x];
