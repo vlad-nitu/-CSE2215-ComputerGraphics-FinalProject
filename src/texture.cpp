@@ -12,7 +12,6 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
     int col = texCoord.x * image.width; // Convert to int so values are rounded down representing the line
     int row = texCoord.y * image.height; // Convert to int so values are rounded down representing the column
 
-    //col++;
     row++;
 
     return image.pixels[(image.height - row) * image.width + col];
