@@ -18,7 +18,7 @@
 bool drawDebugShading = false;
 
 // Change the maximul allowed ray depth
-int max_ray_depth = 2;
+int max_ray_depth = 1;
 
 // The level in the recursion tree of which to show the intersected but unvisited nodes of the BVH
 bool showUnvisited = false;

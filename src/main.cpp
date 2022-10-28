@@ -136,7 +136,7 @@ int main(int argc, char** argv)
                 ImGui::Checkbox("Shading", &config.features.enableShading);
                 ImGui::Checkbox("Recursive(reflections)", &config.features.enableRecursive);
                 if (config.features.enableRecursive) {
-                    ImGui::SliderInt("Number of rays", &max_ray_depth, 2, 10);
+                    ImGui::SliderInt("Number of rays", &max_ray_depth, 1, 10);
                 }
                 ImGui::Checkbox("Hard shadows", &config.features.enableHardShadow);
                 ImGui::Checkbox("Soft shadows", &config.features.enableSoftShadow);
