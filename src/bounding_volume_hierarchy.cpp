@@ -82,8 +82,6 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
         m_numLeaves += 2; // Children are by default leafs
 
 
-
-
         // Sort method taken from https://en.cppreference.com/w/cpp/algorithm/sort
         /*
          * Sort the indices based on the centroids by the current axis in order to find the median one.
@@ -177,8 +175,8 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
             else{
                 low_triangle = glm::min(v0, glm::min(v1, v2));
                 high_triangle = glm::max(v0, glm::min(v1, v2));
-                AxisAlignedBox aabb {low_triangle, high_triangle};
-                centroids_AABB.push_back(aabb);
+                glm::vec3 AABB_centroid = (low_triangle + high_triangle ) / glm::vec3 {2};
+                centroids.push_back(AABB_centroid);
             }
 
             // Compute root's AABB boundary
@@ -210,7 +208,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
 
     subdivideNode(root, centroids, 0, 0);
 }
-}
+
 
 // Return the depth of the tree that you constructed. This is used to tell the
 // slider in the UI how many steps it should display for Visual Debug 1.
