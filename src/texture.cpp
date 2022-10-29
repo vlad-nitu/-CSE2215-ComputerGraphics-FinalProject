@@ -101,3 +101,10 @@ glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, 
 
     return interpolated_texCoord; 
 }
+
+glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord,  const Features& features, int level, Ray& ray) {
+        
+        if (features.extra.enableMipmapTextureFiltering && drawMipMapDebug)
+                debugDrawMipMapLevel(level, ray); 
+        return bilinearInterpolation(image, texCoord, features);        
+}

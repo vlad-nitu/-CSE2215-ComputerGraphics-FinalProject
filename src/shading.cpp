@@ -72,9 +72,9 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
                 glm::vec3 kd;
                 
                 if (features.extra.enableBilinearTextureFiltering)
-                    kd = bilinearInterpolation(map[img][level], hitInfo.texCoord, features);
+                    kd = bilinearInterpolation(map[img][level], hitInfo.texCoord, features, level, ray);
                 else
-                    kd = acquireTexel(map[img][level], hitInfo.texCoord, features);
+                    kd = acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray);
 
                 return lightColor * kd * dotProduct;
             }
@@ -148,9 +148,9 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
                 level = mipmap_max_depth;
 
             if (features.extra.enableBilinearTextureFiltering)
-                return bilinearInterpolation(map[img][level], hitInfo.texCoord, features);
+                return bilinearInterpolation(map[img][level], hitInfo.texCoord, features, level, ray);
             else
-                return acquireTexel(map[img][level], hitInfo.texCoord, features);
+                return acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray);
              }
 
             if (features.extra.enableBilinearTextureFiltering)
