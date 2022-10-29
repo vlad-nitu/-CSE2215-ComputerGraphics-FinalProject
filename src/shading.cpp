@@ -94,7 +94,7 @@ const Ray computeReflectionRay(Ray ray, HitInfo hitInfo)
     return reflectionRay;
 }
 
-const Ray computeRefractedRay(Ray& ray, HitInfo hitInfo)
+const Ray computeRefractedRay(const Ray& ray)
 {
     const float OFFSET = 1e-5;
     glm::vec3 p = ray.origin + ray.t * ray.direction;

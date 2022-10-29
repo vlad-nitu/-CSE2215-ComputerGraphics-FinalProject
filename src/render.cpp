@@ -70,7 +70,7 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
 
                     // Check if material is transparent
                     if (transparency < 1.0f) {
-                        Ray refraction = computeRefractedRay(ray, hitInfo);
+                        Ray refraction = computeRefractedRay(ray);
 
                         Lo += (1.0f - transparency) * getFinalColor(scene, bvh, refraction, features, rayDepth + 1);
                     }
