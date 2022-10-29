@@ -463,6 +463,7 @@ bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo
 
             hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
 
+            hitInfo.material = bestSphere.material;
             bestPrimitiveIndex = bestSphereIndex;
         }
     } else if (bestTriangleIndex != -1) {
@@ -568,6 +569,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 hitInfo.normal = glm::normalize(p - bestSphere.center);
 
                 hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+                hitInfo.material = bestSphere.material;
 
                 drawRay({ p, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 }); // Used normal
                 drawRay({ p, p - bestSphere.center, 0.4f }, glm::vec3 { 0, 0, 1 }); // Actual normal normal
