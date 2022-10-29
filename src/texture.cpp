@@ -9,25 +9,7 @@ bool drawMipMapDebug = false;
 std::unordered_map<Image, std::vector<Image> > map; 
 int mipmap_max_depth;
 
-/*
-Create MipMap w/ 5 levels, where initial_image is on level 0 (root) 
-*/
-
 void debugDrawMipMapLevel(int level, Ray& ray) { 
-
-    glm::vec3 center{0,0,0}; 
-
-    // glm::vec3 curr_lower {- (2 *level), - (2 * level), - (2 * level)};
-    // glm::vec3 curr_upper {(2 * level), (2 * level), (2 * level)};
-
-    //     glm::vec3 prev_lower {curr_lower -  glm::vec3{2 * sqrt(3), 2 * sqrt(3), 2 * sqrt(3)} };
-    //     glm::vec3 prev_upper {curr_upper + glm::vec3{2 * sqrt(3), 2 * sqrt(3), 2 * sqrt(3)} };
-
-    //     drawAABB({prev_lower, prev_upper}, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
-    //     drawAABB({curr_lower, curr_upper}, DrawMode::Filled, glm::vec3{1,0,0}, 0.4f);
-        
-        // drawSphere(center, 2 * level, glm::vec3{0,1,0});
-        // drawSphere(center, 2 * (level + 1),glm::vec3{1,0,0});
 
         glm::vec3 RED {1.0f, 0.0f, 0.0f}; 
         glm::vec3 GREEN {0.0f, 1.0f, 0.0f}; 
@@ -46,11 +28,8 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
     
     Image img = image; 
 
-    if (features.extra.enableMipmapTextureFiltering)
-        {
-             if (drawMipMapDebug)
+    if (features.extra.enableMipmapTextureFiltering && drawMipMapDebug)
                 debugDrawMipMapLevel(level, ray); 
-        }
 
     int col = texCoord.x * img.width; // Convert to int so values are rounded down representing the line
     int row = texCoord.y * img.height; // Convert to int so values are rounded down representing the column
