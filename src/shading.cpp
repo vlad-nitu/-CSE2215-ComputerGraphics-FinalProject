@@ -66,10 +66,18 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
             if (level > mipmap_max_depth)
                 level = mipmap_max_depth;
 
-            glm::vec3 kd = acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray);
 
             if (features.enableTextureMapping && hitInfo.material.kdTexture)
+            {
+                glm::vec3 kd;
+                
+                if (features.extra.enableBilinearTextureFiltering)
+                    kd = bilinearInterpolation(map[img][level], hitInfo.texCoord, features);
+                else
+                    kd = acquireTexel(map[img][level], hitInfo.texCoord, features);
+
                 return lightColor * kd * dotProduct;
+            }
             else 
                 return lightColor * hitInfo.material.kd * dotProduct;
     }
@@ -126,6 +134,25 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
         return shading;
     } else {
         if (features.enableTextureMapping && hitInfo.material.kdTexture) {
+
+             if (features.extra.enableMipmapTextureFiltering) {
+            int level = ray.t / 2; 
+            Image& img = *hitInfo.material.kdTexture;
+            
+            mipmap_max_depth = std::log2(img.height);
+
+            if (map.find(img) == map.end())
+                map[img] = createImages(img);
+
+            if (level > mipmap_max_depth)
+                level = mipmap_max_depth;
+
+            if (features.extra.enableBilinearTextureFiltering)
+                return bilinearInterpolation(map[img][level], hitInfo.texCoord, features);
+            else
+                return acquireTexel(map[img][level], hitInfo.texCoord, features);
+             }
+
             if (features.extra.enableBilinearTextureFiltering)
                 return bilinearInterpolation(*hitInfo.material.kdTexture, hitInfo.texCoord, features); 
             else
