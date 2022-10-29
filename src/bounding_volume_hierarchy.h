@@ -57,21 +57,19 @@ struct Node {
 
 class BoundingVolumeHierarchy {
 private:
-    //void computeAABB(Node& node);
-
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
-    void subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth);
+    void subdivideNode(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth);
 
-    void showLevel(Node& node, int currentLevel, int targetLevel);
+    void showLevel(const Node& node, int currentLevel, int targetLevel);
 
     void getLeaf(int index, int& leafIdx, int& result);
 
     void drawPrimitive(int primitiveIndex, const Ray& ray, const Features& features, const HitInfo& hitInfo) const;
 
-    bool isInAABB(Ray& ray, AxisAlignedBox& aabb) const;
+    bool isInAABB(const Ray& ray, const AxisAlignedBox& aabb) const;
 
-    bool testPrimitives(Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
+    bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.

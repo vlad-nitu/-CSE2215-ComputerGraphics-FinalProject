@@ -7,6 +7,9 @@
 #include "shading.h"
 
 extern bool drawShadowRayDebug;
+extern bool useConstantSeed;
+
+extern int SAMPLE_COUNT;
 
 void sampleSegmentLight (const SegmentLight& segmentLight, glm::vec3& position, glm::vec3& color);
 
