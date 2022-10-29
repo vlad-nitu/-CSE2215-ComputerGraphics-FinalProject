@@ -54,7 +54,7 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     glm::vec3 surfaceLightVector = glm::normalize(lightPosition - postion);
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
-    if (features.extra.enableMipmapTextureFiltering){
+    if (features.extra.enableMipmapTextureFiltering && hitInfo.material.kdTexture){
             int level = ray.t / 2; 
             Image& img = *hitInfo.material.kdTexture;
             
