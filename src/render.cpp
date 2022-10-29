@@ -36,6 +36,7 @@ int DOFsamples = 1;
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
     HitInfo hitInfo;
+    glm::vec3 Lo = glm::vec3 { 0 };
 
     if (showUnvisited) {
         if (rayDepth == traversalDebugDepth)
@@ -46,9 +47,20 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         drawUnvisited = false;
     }
 
+    // Check if the rays come from the camera
+    if (rayDepth == 1) {
+        // Implement DOF
+        if (features.extra.enableDepthOfField) {
+
+            // Also trace the random focal point rays
+            Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
+
+        }
+    }
+
     if (bvh.intersect(ray, hitInfo, features)) {
 
-        glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
+        Lo += computeLightContribution(scene, bvh, features, ray, hitInfo);
 
         if (features.enableRecursive) {
 
@@ -88,14 +100,10 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
             }
         }
 
-        // Check if therays come from the camera
+        // Check if the rays come from the camera
         if (rayDepth == 1) {
-            // Implement DOF
             if (features.extra.enableDepthOfField) {
-
-                Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
-
-                Lo /= (DOFsamples + 1);
+                Lo /= (DOFsamples + 1); // Average the results
             }
         }
 
@@ -112,7 +120,16 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         // Draw a red debug ray if the ray missed.
         drawRay(ray, glm::vec3(1.0f, 0.0f, 0.0f));
         // Set the color of the pixel to black if the ray misses.
-        return glm::vec3(0.0f);
+
+        // Check if the rays come from the camera
+        if (rayDepth == 1) {
+            // Implement DOF
+            if (features.extra.enableDepthOfField) {
+                Lo /= DOFsamples; // Average the results without main ray
+            }
+        }
+
+        return Lo;
     }
 }
 
