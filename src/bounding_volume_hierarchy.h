@@ -48,21 +48,22 @@ struct Node {
     * Because primitives are divided among meshes and spheres we represent them 
     * as if contained in a single continuous vector. 
     * To get the mesh and position
-    * of a primitive we substract mesh sizes one by one untill the curent mesh size
+    * of a primitive we substract mesh sizes one by one until the curent mesh size
     * is bigger than the remaining index of the primitive.
-    * After substractiv all the meshes we consider that the primitive is a sphere
+    * After substraction all the meshes we consider that the primitive is a sphere
     */
     std::vector<int> children; 
 };
 
     struct SahAABB { 
-        AxisAlignedBox AABB_bounds; // boundaries of AABB
+        AxisAlignedBox bounds; // boundaries of AABB
         std::vector<int> primitiveIndexes; // index in node.children vector
     };
 
 
 class BoundingVolumeHierarchy {
 private:
+
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
     void subdivideNode(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth);
@@ -77,9 +78,13 @@ private:
 
     bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
-    void subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth);  
+    void subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, const std::vector<AxisAlignedBox>& AABBs, int depth);  
     
     glm::vec3 computeAABB_centroid(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2);
+
+    float volume(AxisAlignedBox AABB);
+
+    void unionBoxes(AxisAlignedBox& updated_box, AxisAlignedBox& next_box);
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
@@ -107,4 +112,6 @@ private:
     int m_numLeaves;
     Scene* m_pScene;
     std::vector<Node> nodes;
+    int N_BINS = 16; // # of bins to split SAH
+    double EPSILON = 1e-4; // offset for SAH
 };
