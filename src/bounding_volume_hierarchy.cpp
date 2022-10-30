@@ -66,7 +66,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
 
-    if (node.children.size() <= 4) {
+    if (node.children.size() <= 5) {
         nodes.push_back(node); // Add the node to the hierarchy
 
         return;
@@ -349,8 +349,8 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
             if (features.extra.enableBvhSahBinning) { 
                 // Compute AABB for each triangle
                 // centroids.push_back(computeAABB_centroid(v0, v1, v2));
-                glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
-                centroids.push_back(centre);
+                // glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
+                centroids.push_back(computeAABB_centroid(v0, v1, v2));
 
                 glm::vec3 low_aabb = glm::vec3{ std::numeric_limits<float>::max()  };
                 glm::vec3 high_aabb = glm::vec3{ -std::numeric_limits<float>::max() } ;
