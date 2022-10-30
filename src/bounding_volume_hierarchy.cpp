@@ -340,7 +340,9 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
 
             if (features.extra.enableBvhSahBinning) { 
                 // Compute AABB for each triangle
-                centroids.push_back(computeAABB_centroid(v0, v1, v2));
+                // centroids.push_back(computeAABB_centroid(v0, v1, v2));
+                glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
+                centroids.push_back(centre);
 
                 glm::vec3 low_aabb = glm::vec3{ std::numeric_limits<float>::max()  };
                 glm::vec3 high_aabb = glm::vec3{ -std::numeric_limits<float>::max() } ;
