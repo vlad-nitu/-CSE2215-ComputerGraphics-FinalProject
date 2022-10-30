@@ -55,6 +55,12 @@ struct Node {
     std::vector<int> children; 
 };
 
+    struct SahAABB { 
+        AxisAlignedBox AABB_bounds; // boundaries of AABB
+        std::vector<int> primitiveIndexes; // index in node.children vector
+    };
+
+
 class BoundingVolumeHierarchy {
 private:
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
@@ -70,6 +76,10 @@ private:
     bool isInAABB(const Ray& ray, const AxisAlignedBox& aabb) const;
 
     bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
+
+    void subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth);  
+    
+    glm::vec3 computeAABB_centroid(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2);
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
@@ -91,7 +101,6 @@ public:
     // Only find hits if they are closer than t stored in the ray and the intersection
     // is on the correct side of the origin (the new t >= 0).
     bool intersect(Ray& ray, HitInfo& hitInfo, const Features& features) const;
-
 
 private:
     int m_numLevels;

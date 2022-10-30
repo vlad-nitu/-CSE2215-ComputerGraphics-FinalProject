@@ -63,8 +63,6 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 /// <param name="depth"> The depth of the given node. </param>
 void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth)
 {
-    // computeAABB(node);
-
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
 
@@ -132,6 +130,35 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
     }
 }
 
+void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, const std::vector<AxisAlignedBox>& AABBs, int depth)
+{
+    // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
+    m_numLevels = std::max(m_numLevels, depth + 1);
+
+    if (node.children.size() <= 4) {
+        nodes.push_back(node); // Add the node to the hierarchy
+
+        return;
+    } else {
+        // We further need to subdivide
+        node.isLeaf = false;
+        m_numLeaves--; // Current node is no longer a leaf
+
+        Node leftChild = Node(true);
+        Node rightChild = Node(true);
+        m_numLeaves += 2; // Children are by default leafs
+    }
+}
+
+glm::vec3 BoundingVolumeHierarchy::computeAABB_centroid (glm::vec3 v0, glm::vec3 v1, glm::vec3 v2)
+{
+
+    glm::vec3 lower = glm::min(v0, glm::min(v1, v2));
+    glm::vec3 upper = glm::max(v0, glm::max(v1, v2));
+    AxisAlignedBox aabb = {lower, upper};
+    return (lower + upper) / glm::vec3{2};
+}
+
 BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)
     : m_pScene(pScene)
 {
@@ -144,6 +171,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      * Follows the same ordering as for the flattened list of triangles used in the node struct
      */
     std::vector<glm::vec3> centroids;
+    std::vector<AxisAlignedBox> AABBs; 
 
     Node root = Node(true);
 
@@ -157,9 +185,16 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
             const auto& v1 = mesh.vertices[tri[1]].position;
             const auto& v2 = mesh.vertices[tri[2]].position;
 
+
+            if (features.extra.enableBvhSahBinning) { 
+                // Compute AABB for each triangle
+                centroids.push_back(computeAABB_centroid(v0, v1, v2)); 
+            }
+            else {   
             // Compute centroids
             glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
             centroids.push_back(centre);
+            }
 
             // Compute root's AABB boundry
             low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
@@ -188,7 +223,10 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.lower = low;
     root.upper = high;
 
-    subdivideNode(root, centroids, 0, 0);
+    if (features.extra.enableBvhSahBinning)
+        subdivideNodeSah(root, centroids, 0);
+    else
+        subdivideNode(root, centroids, 0, 0);
 }
 
 // Return the depth of the tree that you constructed. This is used to tell the
