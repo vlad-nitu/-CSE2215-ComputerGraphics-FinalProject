@@ -91,6 +91,8 @@ private:
 
     void unionBoxes(AxisAlignedBox& updated_box, AxisAlignedBox& next_box);
 
+    void updateAABB_Sha (glm::vec3 v, glm::vec3& lower, glm::vec3& upper);
+
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
     BoundingVolumeHierarchy(Scene* pScene, const Features& features);

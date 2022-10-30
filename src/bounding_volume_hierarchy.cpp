@@ -134,16 +134,11 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
 {
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
-    // printf("1\n"); 
       
-        if (node.children.size() <= 4 || depth >= 15) {
-        // printf("%d\n", node.children.size()); 
+        if (node.children.size() <= 4 || depth >= 20) {
         nodes.push_back(node); // Add the node to the hierarchy
         return;
     }
-
-    // printf("2\n");
-    
 
         // compute AABB of centroids of triangles
          glm::vec3 low_aabb = glm::vec3{ std::numeric_limits<float>::max()  };
@@ -152,7 +147,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
          int primitives = node.children.size();
 
          for (int i = 0; i < primitives; ++i) {
-            updateAABB(node.children[i], low_aabb, high_aabb); 
+            updateAABB_Sha(centroids[node.children[i]], low_aabb, high_aabb); 
          }
 
          float max_val = - std::numeric_limits<float>::max(); 
@@ -197,7 +192,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
 
         int bin_index = (1 - EPSILON) * N_BINS * (centr - cbmin) / (cbmax - cbmin);
         updateAABB(node.children[i], bins[bin_index].bounds.lower, bins[bin_index].bounds.upper);
-        bins[bin_index].primitiveIndexes.push_back(node.children[i]);
+        bins[bin_index].primitiveIndexes.push_back(i);
         }
 
         // Store volume and # of primitives for each bin
@@ -205,17 +200,18 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
         std::vector< std::pair<float, int> > costs(N_BINS, defaulted); 
 
         // Precompute left->right then use precomputation when traversing right->left in order to obtain linear time complexity
-        costs.push_back(std::make_pair(volume(bins[0].bounds), bins[0].primitiveIndexes.size())); 
+        costs[0] = (std::make_pair(volume(bins[0].bounds), bins[0].primitiveIndexes.size())); 
         AxisAlignedBox updated_box = bins[0].bounds;
         int added_triangles = bins[0].primitiveIndexes.size(); 
 
 
         for (int idx = 1; idx < N_BINS; ++idx) {  //left->right
-                unionBoxes(updated_box, bins[idx].bounds);
-                added_triangles +=  bins[idx].primitiveIndexes.size();
 
                 if (!bins[idx].primitiveIndexes.empty()) // compute cost
                 { 
+                    unionBoxes(updated_box, bins[idx].bounds);
+                    added_triangles +=  bins[idx].primitiveIndexes.size();
+
                     std::pair<float, int> curr_cost = {volume(updated_box), added_triangles}; 
                     costs[idx] = curr_cost;
                 }
@@ -229,11 +225,12 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
         added_triangles = bins[N_BINS - 1].primitiveIndexes.size();
 
         for (int idx = N_BINS - 2; idx >= 0; --idx) { 
-           unionBoxes(updated_box, bins[idx].bounds);
-           added_triangles +=  bins[idx].primitiveIndexes.size(); 
 
            if (!bins[idx].primitiveIndexes.empty()) // compute cost 
            {
+           unionBoxes(updated_box, bins[idx].bounds);
+           added_triangles +=  bins[idx].primitiveIndexes.size(); 
+
             float cost = costs[idx].first * costs[idx].second + volume(updated_box) * added_triangles; 
             
             if (cost < min_val && costs[idx].first * costs[idx].second != 0) // both splits are not empty
@@ -265,16 +262,19 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
         glm::vec3 rightMin = glm::vec3 { std::numeric_limits<float>::max() };
         glm::vec3 rightMax = glm::vec3 { -std::numeric_limits<float>::max() };
 
-        for (int i = 0; i < node.children.size(); i++) {
-
-            if (i <= split_idx) {
-                leftChild.children.push_back(node.children[i]);
-                updateAABB(node.children[i], leftMin, leftMax); // Update the AABB of the left child
-            } else {
-                rightChild.children.push_back(node.children[i]);
-                updateAABB(node.children[i], rightMin, rightMax); // Update the AABB of the right child
-            }
-        }
+        
+        for (int i = 0; i <= split_idx; i++)
+            for (int j = 0; j < bins[i].primitiveIndexes.size(); ++j) {
+                leftChild.children.push_back(node.children[bins[i].primitiveIndexes[j]]);
+                updateAABB(node.children[bins[i].primitiveIndexes[j]], leftMin, leftMax); // Update the AABB of the left child
+            } 
+           
+        for (int i = split_idx + 1; i < N_BINS; ++i)
+               for (int j = 0; j < bins[i].primitiveIndexes.size(); ++j) {
+                rightChild.children.push_back(node.children[bins[i].primitiveIndexes[j]]);
+                updateAABB(node.children[bins[i].primitiveIndexes[j]], rightMin, rightMax); // Update the AABB of the left child
+            } 
+        
 
         // Assign AABBs to children nodes
         leftChild.lower = leftMin;
@@ -282,6 +282,8 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
 
         rightChild.lower = rightMin;
         rightChild.upper = rightMax;
+
+        node.children.clear(); // Remove the children index from the parent
 
         subdivideNodeSah(leftChild, centroids, depth + 1);
         node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
@@ -292,9 +294,15 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
         nodes.push_back(node);
 }
 
+void BoundingVolumeHierarchy::updateAABB_Sha (glm::vec3 v, glm::vec3& lower, glm::vec3& upper) {
+    lower = glm::min(v, lower) ;
+    upper = glm::max(v, upper);
+    return; 
+}
+
 void BoundingVolumeHierarchy::unionBoxes(AxisAlignedBox& updated_box, AxisAlignedBox& next_box) { 
-    updated_box.lower = glm::min(updated_box.lower, next_box.lower);
-    updated_box.upper = glm::max(updated_box.upper, next_box.upper);
+    updated_box.lower = glm::min(updated_box.lower, glm::min(next_box.lower, next_box.upper));
+    updated_box.upper = glm::max(updated_box.upper, glm::max(next_box.lower, next_box.upper));
     return;
 }
 
@@ -384,7 +392,6 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.lower = low;
     root.upper = high;
 
-    printf("DA\n");
     if (features.extra.enableBvhSahBinning)
         subdivideNodeSah(root, centroids, 0);
     else
