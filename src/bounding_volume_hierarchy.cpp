@@ -307,6 +307,13 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
         if (rayNodeIntersectionDebug)
             drawSphere(sphere);
 
+        if (features.enableNormalInterp && drawNormalInterpolationDebug) {
+            glm::vec3 p = ray.origin + ray.t * ray.direction;
+
+            drawRay({ p, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 }); // Used normal
+            drawRay({ p, p - sphere.center, 0.4f }, glm::vec3 { 0, 0, 1 }); // Actual normal normal
+        }
+
     } else {
         // Get the triangle from the coresponding mesh
         glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
@@ -450,8 +457,15 @@ bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo
 
     // Return the index of the hit primitive
     if (hit && bestSphereT < bestTriangleT && bestSphereIndex != -1) {
-        if (bestSphereT <= ray.t)
+        if (bestSphereT <= ray.t) {
+            glm::vec3 p = ray.origin + ray.t * ray.direction;
+            hitInfo.normal = glm::normalize(p - bestSphere.center);
+
+            hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+
+            hitInfo.material = bestSphere.material;
             bestPrimitiveIndex = bestSphereIndex;
+        }
     } else if (bestTriangleIndex != -1) {
         if (bestTriangleT <= ray.t)
             bestPrimitiveIndex = bestTriangleIndex;
@@ -552,8 +566,13 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.4f }, glm::vec3 { 0, 0, 1 }); // Interpolated normal
             } else {
                 glm::vec3 p = ray.origin + ray.t * ray.direction;
+                hitInfo.normal = glm::normalize(p - bestSphere.center);
 
-                drawRay({ p, p - bestSphere.center, 0.2f }, glm::vec3 { 0, 1, 0 });
+                hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+                hitInfo.material = bestSphere.material;
+
+                drawRay({ p, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 }); // Used normal
+                drawRay({ p, p - bestSphere.center, 0.4f }, glm::vec3 { 0, 0, 1 }); // Actual normal normal
             }
         }
 
