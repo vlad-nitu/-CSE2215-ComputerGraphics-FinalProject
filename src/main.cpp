@@ -179,7 +179,7 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
                 if (config.features.extra.enableGlossyReflection) {
-                    // Insert config
+                    ImGui::SliderInt("Number of perturbed reflection samples", &numPerturbedSamples, 10, 300);
                 }
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 if (config.features.extra.enableTransparency) {
@@ -244,6 +244,9 @@ int main(int argc, char** argv)
 
                     if (ImGui::CollapsingHeader("Hard (and soft) shadows") && (config.features.enableHardShadow || config.features.enableSoftShadow)) {
                         ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
+                        if (config.features.enableSoftShadow) {
+                            ImGui::Checkbox("Use constant seed", &useConstantSeed);
+                        }
                     }
 
                     if (ImGui::CollapsingHeader("BVH") && config.features.enableAccelStructure) {
