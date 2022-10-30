@@ -242,7 +242,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
 
         }
 
-        if (split_idx == INT_MAX || min_val == std::numeric_limits<float>::max()){ 
+        if (split_idx == -1 || min_val == std::numeric_limits<float>::max()){ 
             node.isLeaf = true; 
             return ;
         }
