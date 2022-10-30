@@ -55,14 +55,19 @@ struct Node {
     std::vector<int> children; 
 };
 
-    struct SahAABB { 
-        AxisAlignedBox bounds; // boundaries of AABB
-        std::vector<int> primitiveIndexes; // index in node.children vector
-    };
+struct SahAABB { 
+    AxisAlignedBox bounds {glm::vec3{std::numeric_limits<float>::max()},
+                           glm::vec3{-std::numeric_limits<float>::max()}}; // boundaries of AABB
+    std::vector<int> primitiveIndexes; // index in node.children vector
+};
 
 
 class BoundingVolumeHierarchy {
 private:
+    
+    int N_BINS = 16;
+    double EPSILON = 1e-4;
+    std::vector<AxisAlignedBox> AABBs;
 
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
@@ -78,7 +83,7 @@ private:
 
     bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
-    void subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, const std::vector<AxisAlignedBox>& AABBs, int depth);  
+    void subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth);  
     
     glm::vec3 computeAABB_centroid(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2);
 
@@ -112,6 +117,5 @@ private:
     int m_numLeaves;
     Scene* m_pScene;
     std::vector<Node> nodes;
-    int N_BINS = 16; // # of bins to split SAH
-    double EPSILON = 1e-4; // offset for SAH
+   
 };

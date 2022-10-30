@@ -130,18 +130,20 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
     }
 }
 
-void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, const std::vector<AxisAlignedBox>& AABBs, int depth)
+void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth)
 {
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
-
+    // printf("1\n"); 
       
+        if (node.children.size() <= 4 || depth >= 15) {
+        // printf("%d\n", node.children.size()); 
+        nodes.push_back(node); // Add the node to the hierarchy
+        return;
+    }
 
-        if (nodes.size() <= 4) // at most 4 triangles per node
-        {
-            nodes.push_back(node); 
-            return;
-        }
+    // printf("2\n");
+    
 
         // compute AABB of centroids of triangles
          glm::vec3 low_aabb = glm::vec3{ std::numeric_limits<float>::max()  };
@@ -281,10 +283,10 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
         rightChild.lower = rightMin;
         rightChild.upper = rightMax;
 
-        subdivideNodeSah(leftChild, centroids, AABBs, depth + 1);
+        subdivideNodeSah(leftChild, centroids, depth + 1);
         node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
 
-        subdivideNodeSah(rightChild, centroids, AABBs, depth + 1);
+        subdivideNodeSah(rightChild, centroids, depth + 1);
         node.children.push_back(nodes.size() - 1); // Remember the index of the right child for the parent
 
         nodes.push_back(node);
@@ -321,8 +323,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      *
      * Follows the same ordering as for the flattened list of triangles used in the node struct
      */
-    std::vector<glm::vec3> centroids;
-    std::vector<AxisAlignedBox> AABBs;
+    std::vector<glm::vec3> centroids {};
 
     Node root = Node(true);
 
@@ -381,8 +382,9 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.lower = low;
     root.upper = high;
 
+    printf("DA\n");
     if (features.extra.enableBvhSahBinning)
-        subdivideNodeSah(root, centroids, AABBs, 0);
+        subdivideNodeSah(root, centroids, 0);
     else
         subdivideNode(root, centroids, 0, 0);
 }
