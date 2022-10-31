@@ -226,14 +226,19 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
 
         for (int idx = N_BINS - 2; idx >= 0; --idx) { 
 
-           if (!bins[idx].primitiveIndexes.empty()) // compute cost 
+           if (!bins[idx].primitiveIndexes.empty()) // compute cost if there exist primitives inside current bin
            {
            unionBoxes(updated_box, bins[idx].bounds);
            added_triangles +=  bins[idx].primitiveIndexes.size(); 
 
-            float cost = costs[idx].first * costs[idx].second + volume(updated_box) * added_triangles; 
+           float vol = volume(updated_box);
 
-            if (cost < min_val && costs[idx].first * costs[idx].second != 0) // both splits are not empty
+            float cost = costs[idx].first * costs[idx].second + vol * added_triangles;
+
+            if (costs[idx].first * costs[idx].second == 0 || vol * added_triangles == 0) // if there are no primitives to the left OR to the right of the bin -> do not perform split
+                continue;
+
+            if (cost < min_val) // both splits are not empty
                 {
                     min_val = cost; 
                     split_idx = idx; 
