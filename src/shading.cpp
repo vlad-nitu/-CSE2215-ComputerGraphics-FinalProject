@@ -30,10 +30,10 @@ std::vector<Image> createImages(const Image& image) {
 
         while (y < grid_size) {
 
-            glm::vec3 interpolated_pixel = (prev_image.pixels[x] + prev_image.pixels[x + 1] + prev_image.pixels[x + prev_w] + prev_image.pixels[x + prev_w + 1]) / 4.0f;  
+            glm::vec3 interpolated_pixel = (prev_image.pixels[x + y] + prev_image.pixels[x + y + 1] + prev_image.pixels[x + y + prev_w] + prev_image.pixels[x + y + prev_w + 1]) / 4.0f;
             new_pixels.push_back(interpolated_pixel);
 
-            if (x < prev_w)
+            if (x < prev_w - 2)
                 x += 2;
             else{
                 x = 0; y += 2 * prev_w;
