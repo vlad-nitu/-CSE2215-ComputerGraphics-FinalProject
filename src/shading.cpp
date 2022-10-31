@@ -33,8 +33,14 @@ std::vector<Image> createImages(const Image& image) {
             glm::vec3 interpolated_pixel = (prev_image.pixels[x + y] + prev_image.pixels[x + y + 1] + prev_image.pixels[x + y + prev_w] + prev_image.pixels[x + y + prev_w + 1]) / 4.0f;
             new_pixels.push_back(interpolated_pixel);
 
-            if (x < prev_w - 2)
+            if (x < prev_w)
+            {
                 x += 2;
+                if (x == prev_w)
+                {
+                    x = 0; y += 2 * prev_w;
+                }
+            }
             else{
                 x = 0; y += 2 * prev_w;
             }
