@@ -65,12 +65,14 @@ struct SahAABB {
 class BoundingVolumeHierarchy {
 private:
     
+    // Number of bins chosen for SAH+Binning
     const int N_BINS = 16;
+    // Offset for calculating `bin_index` in order to remain within boundaries
     const double EPSILON = 1e-4;
-    const int MAX_LEAVES = 4;
+    // Max # of primitives / leaf allowed for BVH
+    const int MAX_PRIMITIVES_PER_LEAF = 4;
+    // Max depth BVH can reach
     const int MAX_DEPTH = 15; 
-
-    std::vector<AxisAlignedBox> AABBs;
 
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
@@ -86,14 +88,19 @@ private:
 
     bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
+    // Splits each node and performs all necessary computations for SAH+Binning step for `node`, then recurses on node.left and node.right
     void subdivideNodeSah(Node& node, const std::vector<AxisAlignedBox>& AABBs, const std::vector<glm::vec3>& centroids, int depth);  
     
+    // Computes the centroid of an AABB as `lower + upper / 2`
     glm::vec3 computeAABB_centroid(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
 
+    // Calculates the volume of an AABB 
     float volume(const AxisAlignedBox& AABB);
 
+    // Unifies `updated_box` with `next_box` in order to make a bigger box that encapsulates both
     void unionBoxes(AxisAlignedBox& updated_box, const AxisAlignedBox& next_box);
 
+    // Updates `lower` and `upper` as being the min / max compared to `v` element-wise, respectively
     void updateAABB_Sha (const glm::vec3& v, glm::vec3& lower, glm::vec3& upper);
 
 public:

@@ -135,7 +135,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
       
-        if (node.children.size() <= MAX_LEAVES || depth >= MAX_DEPTH) {
+        if (node.children.size() <= MAX_PRIMITIVES_PER_LEAF || depth >= MAX_DEPTH) {
         nodes.push_back(node); // Add the node to the hierarchy
         return;
     }
@@ -332,6 +332,8 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      * Follows the same ordering as for the flattened list of triangles used in the node struct
      */
     std::vector<glm::vec3> centroids {};
+
+    // Stores an AABB per primitive after encapsulating each into an AABB
     std::vector<AxisAlignedBox> AABBs {};
 
     Node root = Node(true);
