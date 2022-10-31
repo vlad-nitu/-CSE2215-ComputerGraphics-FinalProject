@@ -147,7 +147,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
          int primitives = node.children.size();
 
          for (int i = 0; i < primitives; ++i) {
-            updateAABB_Sha(centroids[node.children[i]], low_aabb, high_aabb); 
+            updateAABB_SAH(centroids[node.children[i]], low_aabb, high_aabb);
          }
 
          float max_val = - std::numeric_limits<float>::max(); 
@@ -232,7 +232,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
            added_triangles +=  bins[idx].primitiveIndexes.size(); 
 
             float cost = costs[idx].first * costs[idx].second + volume(updated_box) * added_triangles; 
-            
+
             if (cost < min_val && costs[idx].first * costs[idx].second != 0) // both splits are not empty
                 {
                     min_val = cost; 
@@ -294,7 +294,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
         nodes.push_back(node);
 }
 
-void BoundingVolumeHierarchy::updateAABB_Sha (const glm::vec3& v, glm::vec3& lower, glm::vec3& upper) {
+void BoundingVolumeHierarchy::updateAABB_SAH (const glm::vec3& v, glm::vec3& lower, glm::vec3& upper) {
     lower = glm::min(v, lower) ;
     upper = glm::max(v, upper);
     return; 

@@ -101,7 +101,7 @@ private:
     void unionBoxes(AxisAlignedBox& updated_box, const AxisAlignedBox& next_box);
 
     // Updates `lower` and `upper` as being the min / max compared to `v` element-wise, respectively
-    void updateAABB_Sha (const glm::vec3& v, glm::vec3& lower, glm::vec3& upper);
+    void updateAABB_SAH (const glm::vec3& v, glm::vec3& lower, glm::vec3& upper);
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.
