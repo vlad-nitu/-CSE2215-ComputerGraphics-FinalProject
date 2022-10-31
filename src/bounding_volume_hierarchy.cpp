@@ -205,15 +205,17 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
         int added_triangles = bins[0].primitiveIndexes.size(); 
 
 
-        for (int idx = 1; idx < N_BINS; ++idx) {  //left->right
+        int index = 1;
+        std::vector<SahAABB>::iterator bin_it;
+        for (bin_it = bins.begin() + 1; bin_it != bins.end(); ++bin_it, ++index ) {  //left->right using ::iterator
 
-                if (!bins[idx].primitiveIndexes.empty()) // compute cost
+                if (! (bin_it->primitiveIndexes.empty()) ) // compute cost
                 { 
-                    unionBoxes(updated_box, bins[idx].bounds);
-                    added_triangles +=  bins[idx].primitiveIndexes.size();
+                    unionBoxes(updated_box, bin_it->bounds);
+                    added_triangles +=  bin_it->primitiveIndexes.size();
 
                     std::pair<float, int> curr_cost = {volume(updated_box), added_triangles}; 
-                    costs[idx] = curr_cost;
+                    costs[index] = curr_cost;
                 }
 
         }
@@ -224,24 +226,26 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
         updated_box = bins[N_BINS - 1].bounds;
         added_triangles = bins[N_BINS - 1].primitiveIndexes.size();
 
-        for (int idx = N_BINS - 2; idx >= 0; --idx) { 
+        index = N_BINS - 2;
+        std::vector<SahAABB>::reverse_iterator bin_it_reverse;
+        for (bin_it_reverse = bins.rbegin() + 1; bin_it_reverse != bins.rend(); ++bin_it_reverse, --index) { // right -> left using reverse::iterator
 
-           if (!bins[idx].primitiveIndexes.empty()) // compute cost if there exist primitives inside current bin
+           if (! (bin_it_reverse->primitiveIndexes.empty()) ) // compute cost if there exist primitives inside current bin
            {
-           unionBoxes(updated_box, bins[idx].bounds);
-           added_triangles +=  bins[idx].primitiveIndexes.size(); 
+           unionBoxes(updated_box, bin_it_reverse->bounds);
+           added_triangles +=  bin_it_reverse->primitiveIndexes.size();
 
            float vol = volume(updated_box);
 
-            float cost = costs[idx].first * costs[idx].second + vol * added_triangles;
+            float cost = costs[index].first * costs[index].second + vol * added_triangles;
 
-            if (costs[idx].first * costs[idx].second <= OFFSET || vol * added_triangles <= OFFSET) // if there are no primitives to the left OR to the right of the bin -> do not perform split
+            if (costs[index].first * costs[index].second <= OFFSET || vol * added_triangles <= OFFSET) // if there are no primitives to the left OR to the right of the bin -> do not perform split
                 continue;
 
             if (cost < min_val) // both splits are not empty
                 {
                     min_val = cost; 
-                    split_idx = idx; 
+                    split_idx = index;
                 }
            }
 
