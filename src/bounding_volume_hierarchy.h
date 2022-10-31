@@ -67,7 +67,6 @@ private:
     
     int N_BINS = 16;
     double EPSILON = 1e-4;
-    std::vector<AxisAlignedBox> AABBs;
 
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
@@ -83,7 +82,7 @@ private:
 
     bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
-    void subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth);  
+    void subdivideNodeSah(Node& node, const std::vector<AxisAlignedBox>& AABBs, const std::vector<glm::vec3>& centroids, int depth);  
     
     glm::vec3 computeAABB_centroid(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2);
 

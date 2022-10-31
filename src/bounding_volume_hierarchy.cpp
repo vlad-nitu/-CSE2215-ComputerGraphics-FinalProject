@@ -130,7 +130,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
     }
 }
 
-void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth)
+void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<AxisAlignedBox>& AABBs, const std::vector<glm::vec3>& centroids, int depth)
 {
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
@@ -285,10 +285,10 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm
 
         node.children.clear(); // Remove the children index from the parent
 
-        subdivideNodeSah(leftChild, centroids, depth + 1);
+        subdivideNodeSah(leftChild, AABBs, centroids, depth + 1);
         node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
 
-        subdivideNodeSah(rightChild, centroids, depth + 1);
+        subdivideNodeSah(rightChild, AABBs, centroids, depth + 1);
         node.children.push_back(nodes.size() - 1); // Remember the index of the right child for the parent
 
         nodes.push_back(node);
@@ -332,6 +332,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      * Follows the same ordering as for the flattened list of triangles used in the node struct
      */
     std::vector<glm::vec3> centroids {};
+    std::vector<AxisAlignedBox> AABBs {};
 
     Node root = Node(true);
 
@@ -393,7 +394,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.upper = high;
 
     if (features.extra.enableBvhSahBinning)
-        subdivideNodeSah(root, centroids, 0);
+        subdivideNodeSah(root, AABBs, centroids, 0);
     else
         subdivideNode(root, centroids, 0, 0);
 }
