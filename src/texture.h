@@ -31,7 +31,7 @@ extern int mipmap_max_depth;
 
 // Given an image and a texture coordinate, return the corresponding texel.
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features);
-glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features,int level, Ray& ray);
+glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features,int level, const Ray& ray);
 
 glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, const Features& features ); 
-glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, const Features& features,int level, Ray& ray); 
+glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, const Features& features,int level, const Ray& ray); 

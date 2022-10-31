@@ -9,7 +9,7 @@ bool drawMipMapDebug = false;
 std::unordered_map<Image, std::vector<Image> > map; 
 int mipmap_max_depth;
 
-void debugDrawMipMapLevel(int level, Ray& ray) { 
+void debugDrawMipMapLevel(int level, const Ray& ray) { 
 
         glm::vec3 RED {1.0f, 0.0f, 0.0f}; 
         glm::vec3 GREEN {0.0f, 1.0f, 0.0f}; 
@@ -18,7 +18,7 @@ void debugDrawMipMapLevel(int level, Ray& ray) {
 
 } 
 
-glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level, Ray& ray)
+glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level, const Ray& ray)
 {
     // TODO: implement this function.
     // Given texcoords, return the corresponding pixel of the image
@@ -92,7 +92,7 @@ glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, 
     return interpolated_texCoord; 
 }
 
-glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord,  const Features& features, int level, Ray& ray) {
+glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord,  const Features& features, int level, const Ray& ray) {
         
         if (features.extra.enableMipmapTextureFiltering && drawMipMapDebug)
                 debugDrawMipMapLevel(level, ray); 

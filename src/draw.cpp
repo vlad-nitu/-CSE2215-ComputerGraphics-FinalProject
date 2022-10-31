@@ -212,7 +212,7 @@ void drawRay(const Ray& ray, const glm::vec3& color)
     glPopAttrib();
 }
 
-void drawSphereCustom(float radius, glm::vec3& color, Ray& ray) { 
+void drawSphereCustom(float radius, glm::vec3& color, const Ray& ray) { 
 
     glm::vec3 ray_dir = ray.origin+ ray.t * ray.direction; 
 
