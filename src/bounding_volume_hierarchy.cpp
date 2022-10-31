@@ -235,7 +235,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
 
             float cost = costs[idx].first * costs[idx].second + vol * added_triangles;
 
-            if (costs[idx].first * costs[idx].second == 0 || vol * added_triangles == 0) // if there are no primitives to the left OR to the right of the bin -> do not perform split
+            if (costs[idx].first * costs[idx].second <= OFFSET || vol * added_triangles <= OFFSET) // if there are no primitives to the left OR to the right of the bin -> do not perform split
                 continue;
 
             if (cost < min_val) // both splits are not empty
@@ -313,7 +313,7 @@ void BoundingVolumeHierarchy::unionBoxes(AxisAlignedBox& updated_box, const Axis
 
 float BoundingVolumeHierarchy::volume(const AxisAlignedBox& AABB) {
     glm::vec3 diff = AABB.upper - AABB.lower; 
-    return (diff.x * diff.y * diff.z) ; 
+    return (diff.x * diff.y * diff.z) ;
 }
 
 

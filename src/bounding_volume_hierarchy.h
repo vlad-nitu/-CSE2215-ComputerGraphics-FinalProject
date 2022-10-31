@@ -72,7 +72,9 @@ private:
     // Max # of primitives / leaf allowed for BVH
     const int MAX_PRIMITIVES_PER_LEAF = 4;
     // Max depth BVH can reach
-    const int MAX_DEPTH = 15; 
+    const int MAX_DEPTH = 15;
+    // Offset for comparing floating point numbers with 0
+    const double OFFSET = 1e-6;
 
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
