@@ -65,8 +65,12 @@ struct SahAABB {
 class BoundingVolumeHierarchy {
 private:
     
-    int N_BINS = 16;
-    double EPSILON = 1e-4;
+    const int N_BINS = 16;
+    const double EPSILON = 1e-4;
+    const int MAX_LEAVES = 4;
+    const int MAX_DEPTH = 15; 
+
+    std::vector<AxisAlignedBox> AABBs;
 
     void updateAABB(int primitiveIndex, glm::vec3& low, glm::vec3& high);
 
@@ -84,13 +88,13 @@ private:
 
     void subdivideNodeSah(Node& node, const std::vector<AxisAlignedBox>& AABBs, const std::vector<glm::vec3>& centroids, int depth);  
     
-    glm::vec3 computeAABB_centroid(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2);
+    glm::vec3 computeAABB_centroid(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);
 
-    float volume(AxisAlignedBox AABB);
+    float volume(const AxisAlignedBox& AABB);
 
-    void unionBoxes(AxisAlignedBox& updated_box, AxisAlignedBox& next_box);
+    void unionBoxes(AxisAlignedBox& updated_box, const AxisAlignedBox& next_box);
 
-    void updateAABB_Sha (glm::vec3 v, glm::vec3& lower, glm::vec3& upper);
+    void updateAABB_Sha (const glm::vec3& v, glm::vec3& lower, glm::vec3& upper);
 
 public:
     // Constructor. Receives the scene and builds the bounding volume hierarchy.

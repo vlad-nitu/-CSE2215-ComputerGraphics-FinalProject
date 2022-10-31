@@ -135,7 +135,7 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
       
-        if (node.children.size() <= 4 || depth >= 20) {
+        if (node.children.size() <= MAX_LEAVES || depth >= MAX_DEPTH) {
         nodes.push_back(node); // Add the node to the hierarchy
         return;
     }
@@ -294,25 +294,25 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
         nodes.push_back(node);
 }
 
-void BoundingVolumeHierarchy::updateAABB_Sha (glm::vec3 v, glm::vec3& lower, glm::vec3& upper) {
+void BoundingVolumeHierarchy::updateAABB_Sha (const glm::vec3& v, glm::vec3& lower, glm::vec3& upper) {
     lower = glm::min(v, lower) ;
     upper = glm::max(v, upper);
     return; 
 }
 
-void BoundingVolumeHierarchy::unionBoxes(AxisAlignedBox& updated_box, AxisAlignedBox& next_box) { 
+void BoundingVolumeHierarchy::unionBoxes(AxisAlignedBox& updated_box, const AxisAlignedBox& next_box) { 
     updated_box.lower = glm::min(updated_box.lower, glm::min(next_box.lower, next_box.upper));
     updated_box.upper = glm::max(updated_box.upper, glm::max(next_box.lower, next_box.upper));
     return;
 }
 
-float BoundingVolumeHierarchy::volume(AxisAlignedBox AABB) {
+float BoundingVolumeHierarchy::volume(const AxisAlignedBox& AABB) {
     glm::vec3 diff = AABB.upper - AABB.lower; 
     return (diff.x * diff.y * diff.z) ; 
 }
 
 
-glm::vec3 BoundingVolumeHierarchy::computeAABB_centroid (glm::vec3 v0, glm::vec3 v1, glm::vec3 v2)
+glm::vec3 BoundingVolumeHierarchy::computeAABB_centroid (const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2)
 {
     glm::vec3 lower = glm::min(v0, glm::min(v1, v2));
     glm::vec3 upper = glm::max(v0, glm::max(v1, v2));
