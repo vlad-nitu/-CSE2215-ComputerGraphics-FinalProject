@@ -26,20 +26,10 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
     // you can convert from position (i,j) to an index using the method seen in the lecture
     // Note, the center of the first pixel is at image coordinates (0.5, 0.5)
     
-    Image img = image; 
-
     if (features.extra.enableMipmapTextureFiltering && drawMipMapDebug)
                 debugDrawMipMapLevel(level, ray); 
 
-    int col = texCoord.x * img.width; // Convert to int so values are rounded down representing the line
-    int row = texCoord.y * img.height; // Convert to int so values are rounded down representing the column
-
-    if (col == img.width)
-        col--;
-    if (row == img.height)
-        row--;
-
-    return img.pixels[row * img.width + col];
+    return acquireTexel(image, texCoord, features);
 }
 
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features)

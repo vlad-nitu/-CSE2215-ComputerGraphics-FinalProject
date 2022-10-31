@@ -187,3 +187,12 @@ const Ray computeReflectionRay(Ray ray, HitInfo hitInfo)
     }
     return reflectionRay;
 }
+
+const Ray computeRefractedRay(const Ray& ray)
+{
+    const float OFFSET = 1e-5;
+    glm::vec3 p = ray.origin + ray.t * ray.direction;
+
+    return {p + OFFSET * ray.direction, ray.direction, std::numeric_limits<float>::max()};
+}
+

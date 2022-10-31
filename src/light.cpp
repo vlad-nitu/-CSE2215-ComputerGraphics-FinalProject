@@ -150,56 +150,59 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             } else if (std::holds_alternative<SegmentLight>(light)) {
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
-                if (features.enableSoftShadow) {
-                    glm::vec3 color = glm::vec3 { 0.0f };
+                glm::vec3 color = glm::vec3 { 0.0f };
 
-                    for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        float alpha = uniform(engine);
+                for (int i = 0; i < SAMPLE_COUNT; i++) {
+                    float alpha = uniform(engine);
 
-                        glm::vec3 samplePosition = glm::vec3 { alpha };
-                        glm::vec3 sampleColor = glm::vec3 { 0.0f };
+                    glm::vec3 samplePosition = glm::vec3 { alpha };
+                    glm::vec3 sampleColor = glm::vec3 { 0.0f };
 
-                        sampleSegmentLight(segmentLight, samplePosition, sampleColor);
+                    sampleSegmentLight(segmentLight, samplePosition, sampleColor);
 
+                    if (features.enableSoftShadow) {
                         // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
                         color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+                    } else {
+                        color += computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
-
-                    // Averaging the shading result
-                    result += (color / static_cast<float>(SAMPLE_COUNT));
                 }
+
+                // Averaging the shading result
+                result += (color / static_cast<float>(SAMPLE_COUNT));
 
                 // If soft shadows are disabled and a point light source is absent, the scene will appear black!
 
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
-                if (features.enableSoftShadow) {
-                    glm::vec3 color = glm::vec3 { 0.0f };
+                glm::vec3 color = glm::vec3 { 0.0f };
 
-                    for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        float alpha = uniform(engine);
-                        float beta = uniform(engine);
+                for (int i = 0; i < SAMPLE_COUNT; i++) {
+                    float alpha = uniform(engine);
+                    float beta = uniform(engine);
 
-                        glm::vec3 samplePosition = glm::vec3 { alpha };
-                        glm::vec3 sampleColor = glm::vec3 { beta };
+                    glm::vec3 samplePosition = glm::vec3 { alpha };
+                    glm::vec3 sampleColor = glm::vec3 { beta };
 
-                        sampleParallelogramLight(parallelogramLight, samplePosition, sampleColor);
+                    sampleParallelogramLight(parallelogramLight, samplePosition, sampleColor);
 
-                        // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
+                    // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
+                    if (features.enableSoftShadow) {
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
                         color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+                    } else {
+                        color += computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
-
-                    // Averaging the shading result
-                    result += (color / static_cast<float>(SAMPLE_COUNT));
                 }
 
-                // If soft shadows are disabled and a point light source is absent, the scene will appear black!
-
+                // Averaging the shading result
+                result += (color / static_cast<float>(SAMPLE_COUNT));
             }
         }
+
+        //return (result / static_cast<float>(scene.lights.size()));
         return result;
 
     } else {

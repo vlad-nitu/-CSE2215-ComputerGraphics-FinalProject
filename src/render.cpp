@@ -36,6 +36,7 @@ int DOFsamples = 1;
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
     HitInfo hitInfo;
+    glm::vec3 Lo = glm::vec3 { 0 };
 
     if (showUnvisited) {
         if (rayDepth == traversalDebugDepth)
@@ -46,26 +47,63 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         drawUnvisited = false;
     }
 
+    // Check if the rays come from the camera
+    if (rayDepth == 1) {
+        // Implement DOF
+        if (features.extra.enableDepthOfField) {
+
+            // Also trace the random focal point rays
+            Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
+
+        }
+    }
+
     if (bvh.intersect(ray, hitInfo, features)) {
 
-        glm::vec3 Lo = computeLightContribution(scene, bvh, features, ray, hitInfo);
+        Lo += computeLightContribution(scene, bvh, features, ray, hitInfo);
 
         if (features.enableRecursive) {
-            Ray reflection = computeReflectionRay(ray, hitInfo);
 
-            if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 } && rayDepth <= max_ray_depth) {
-                Lo = Lo + hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+            // Check if we reached the maximum depth
+            if (rayDepth <= max_ray_depth) {
+
+                // Chech if the transparency feature is enabled
+                if (features.extra.enableTransparency) {
+
+                    float transparency = hitInfo.material.transparency;
+
+                    // Check if material can reflec light
+                    if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 }) {
+                        Ray reflection = computeReflectionRay(ray, hitInfo);
+
+                        float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
+                        Lo += transparency * hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+                    }
+
+                    // Check if material is transparent
+                    if (transparency < 1.0f) {
+                        Ray refraction = computeRefractedRay(ray);
+
+                        Lo += (1.0f - transparency) * getFinalColor(scene, bvh, refraction, features, rayDepth + 1);
+                    }
+
+                } else {
+
+                    // Perform normal recursive raytracing
+                    if (hitInfo.material.ks != glm::vec3 { 0, 0, 0 }) {
+                        Ray reflection = computeReflectionRay(ray, hitInfo);
+
+                        float angle = glm::dot(glm::normalize(ray.direction), glm::normalize(reflection.direction));
+                        Lo += hitInfo.material.ks * getFinalColor(scene, bvh, reflection, features, rayDepth + 1);
+                    }
+                }
             }
         }
 
-        // Check if therays come from the camera
+        // Check if the rays come from the camera
         if (rayDepth == 1) {
-            // Implement DOF
             if (features.extra.enableDepthOfField) {
-
-                Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
-
-                Lo /= (DOFsamples + 1);
+                Lo /= (DOFsamples + 1); // Average the results
             }
         }
 
@@ -82,7 +120,16 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         // Draw a red debug ray if the ray missed.
         drawRay(ray, glm::vec3(1.0f, 0.0f, 0.0f));
         // Set the color of the pixel to black if the ray misses.
-        return glm::vec3(0.0f);
+
+        // Check if the rays come from the camera
+        if (rayDepth == 1) {
+            // Implement DOF
+            if (features.extra.enableDepthOfField) {
+                Lo /= DOFsamples; // Average the results without main ray
+            }
+        }
+
+        return Lo;
     }
 }
 
