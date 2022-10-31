@@ -184,7 +184,8 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 if (config.features.extra.enableTransparency) {
-                    // Insert config
+                    ImGui::Bullet();
+                    ImGui::Checkbox("Shadow rays check transparency", &transparencyShadowRays);
                 }
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
