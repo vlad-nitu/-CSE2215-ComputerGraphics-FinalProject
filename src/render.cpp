@@ -84,6 +84,8 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
                     if (transparency < 1.0f) {
                         Ray refraction = computeRefractedRay(ray);
 
+                        Lo *= transparency;
+
                         Lo += (1.0f - transparency) * getFinalColor(scene, bvh, refraction, features, rayDepth + 1);
                     }
 
