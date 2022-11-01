@@ -113,6 +113,7 @@ int main(int argc, char** argv)
                     "Teapot",
                     "Dragon",
                     /* "AABBs",*/ "Spheres", /*"Mixed",*/
+                    "Texture Debug",
                     "Custom",
                 };
                 if (ImGui::Combo("Scenes", reinterpret_cast<int*>(&sceneType), items.data(), int(items.size()))) {
@@ -183,7 +184,8 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 if (config.features.extra.enableTransparency) {
-                    // Insert config
+                    ImGui::Bullet();
+                    ImGui::Checkbox("Shadow rays check transparency", &transparencyShadowRays);
                 }
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
