@@ -131,7 +131,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
     }
 }
 
-void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<AxisAlignedBox>& AABBs, const std::vector<glm::vec3>& centroids, int depth)
+void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth)
 {
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
@@ -283,10 +283,10 @@ void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<Axi
 
     node.children.clear(); // Remove the children index from the parent
 
-    subdivideNodeSah(leftChild, AABBs, centroids, depth + 1);
+    subdivideNodeSah(leftChild, centroids, depth + 1);
     node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
 
-    subdivideNodeSah(rightChild, AABBs, centroids, depth + 1);
+    subdivideNodeSah(rightChild, centroids, depth + 1);
     node.children.push_back(nodes.size() - 1); // Remember the index of the right child for the parent
 
     nodes.push_back(node);
@@ -333,9 +333,6 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      */
     std::vector<glm::vec3> centroids {};
 
-    // Stores an AABB per primitive after encapsulating each into an AABB
-    std::vector<AxisAlignedBox> AABBs {};
-
     Node root = Node(true);
 
     glm::vec3 low = glm::vec3 { std::numeric_limits<float>::max() };
@@ -349,18 +346,8 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
             const auto& v2 = mesh.vertices[tri[2]].position;
 
             if (features.extra.enableBvhSahBinning) {
-                // Compute AABB for each triangle
-                // centroids.push_back(computeAABB_centroid(v0, v1, v2));
-                // glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
-
-                centroids.push_back(computeAABB_centroid(v0, v1, v2)); // centroid computed on AABB centroid instead of triangle's centroid
-
-                glm::vec3 low_aabb = glm::vec3 { std::numeric_limits<float>::max() };
-                glm::vec3 high_aabb = glm::vec3 { -std::numeric_limits<float>::max() };
-
-                updateAABB(primitiveIndex, low_aabb, high_aabb);
-
-                AABBs.push_back({ low_aabb, high_aabb });
+                // Compute centroid computed on AABB centroid instead of triangle's centroid
+                centroids.push_back(computeAABB_centroid(v0, v1, v2));
             } else {
                 // Compute centroids
                 glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
@@ -395,7 +382,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.upper = high;
 
     if (features.extra.enableBvhSahBinning)
-        subdivideNodeSah(root, AABBs, centroids, 0);
+        subdivideNodeSah(root, centroids, 0);
     else
         subdivideNode(root, centroids, 0, 0);
 }
