@@ -439,18 +439,22 @@ void BoundingVolumeHierarchy::showLevel(const Node& node, int currentLevel, int 
 void BoundingVolumeHierarchy::showLevelSAH(const Node& node, int currentLevel, int targetLevel)
 {
     if (currentLevel == targetLevel) {
-        AxisAlignedBox aabb_right { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
-        AxisAlignedBox aabb_left { nodes[node.children[0]].lower, nodes[node.children[0]].upper};
+
+            if (!node.isLeaf) // make sure that children exist
+            {
+             AxisAlignedBox aabb_left { nodes[node.children[0]].lower, nodes[node.children[0]].upper};
+             AxisAlignedBox aabb_right { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
 
              drawAABB(aabb_left, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
              drawAABB(aabb_right, DrawMode::Wireframe, glm::vec3{1,0,0}, 0.4f);
-
-    } else {
+            }
+             
+    } else 
         if (!node.isLeaf) {
-            
-            showLevelSAH(nodes[node.children[1]], currentLevel + 1, targetLevel);
+             // only recurse on left child for debug purpose
+            showLevelSAH(nodes[node.children[0]], currentLevel + 1, targetLevel);
         }
-    }
+    
 }
 
 // Use this function to visualize your BVH. This is useful for debugging. Use the functions in
