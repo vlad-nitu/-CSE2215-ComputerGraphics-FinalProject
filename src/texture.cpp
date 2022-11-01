@@ -1,5 +1,36 @@
 #include "texture.h"
 #include <framework/image.h>
+#include <vector> 
+#include <algorithm>
+#include <cmath>
+#include "draw.h"
+
+bool drawMipMapDebug = false;
+std::unordered_map<Image, std::vector<Image> > map; 
+int mipmap_max_depth;
+
+void debugDrawMipMapLevel(int level, const Ray& ray) { 
+
+        glm::vec3 RED {1.0f, 0.0f, 0.0f}; 
+        glm::vec3 GREEN {0.0f, 1.0f, 0.0f}; 
+        drawSphereCustom(2 * level, RED, ray); 
+        drawSphereCustom(2 * (level + 1), GREEN, ray); 
+
+} 
+
+glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features, int level, const Ray& ray)
+{
+    // TODO: implement this function.
+    // Given texcoords, return the corresponding pixel of the image
+    // The pixel are stored in a 1D array of row major order
+    // you can convert from position (i,j) to an index using the method seen in the lecture
+    // Note, the center of the first pixel is at image coordinates (0.5, 0.5)
+    
+    if (features.extra.enableMipmapTextureFiltering && drawMipMapDebug)
+                debugDrawMipMapLevel(level, ray); 
+
+    return acquireTexel(image, texCoord, features);
+}
 
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features)
 {
@@ -71,4 +102,11 @@ glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord, 
      + lower_right_color * glm::vec3{alpha * betta}; 
 
     return interpolated_texCoord; 
+}
+
+glm::vec3 bilinearInterpolation (const Image& image, const glm::vec2& texCoord,  const Features& features, int level, const Ray& ray) {
+        
+        if (features.extra.enableMipmapTextureFiltering && drawMipMapDebug)
+                debugDrawMipMapLevel(level, ray); 
+        return bilinearInterpolation(image, texCoord, features);        
 }
