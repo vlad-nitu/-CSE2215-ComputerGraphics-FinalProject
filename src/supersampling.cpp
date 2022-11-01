@@ -23,8 +23,9 @@ glm::vec3 pixelResult(const int sampleCount, const int x, const int y, const glm
 
     for (int p = 0; p < sampleCount; p++) {
         for (int q = 0; q < sampleCount; q++) {
+            Ray sampleRay = generateSample(x, y, p, q, windowResolution, camera);
 
-            pixelColor += getFinalColor(scene, bvh, generateSample(x, y, p, q, windowResolution, camera), features);
+            pixelColor += getFinalColor(scene, bvh, sampleRay, features);
         }
     }
 
