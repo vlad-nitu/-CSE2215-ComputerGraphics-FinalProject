@@ -13,6 +13,7 @@ bool drawNormalInterpolationDebug = false;
 // Draw the debug for BVH traversal
 bool rayNodeIntersectionDebug = false;
 bool drawUnvisited = false;
+bool drawSAH_Debug = false; 
 
 /// <summary>
 /// Given a primitive's index it will update the minimum and maximum coordinates of an AABBs corners
@@ -435,13 +436,33 @@ void BoundingVolumeHierarchy::showLevel(const Node& node, int currentLevel, int 
     }
 }
 
+void BoundingVolumeHierarchy::showLevelSAH(const Node& node, int currentLevel, int targetLevel)
+{
+    if (currentLevel == targetLevel) {
+        AxisAlignedBox aabb_right { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
+        AxisAlignedBox aabb_left { nodes[node.children[0]].lower, nodes[node.children[0]].upper};
+
+             drawAABB(aabb_left, DrawMode::Wireframe, glm::vec3{0,1,0}, 0.4f);
+             drawAABB(aabb_right, DrawMode::Wireframe, glm::vec3{1,0,0}, 0.4f);
+
+    } else {
+        if (!node.isLeaf) {
+            
+            showLevelSAH(nodes[node.children[1]], currentLevel + 1, targetLevel);
+        }
+    }
+}
+
 // Use this function to visualize your BVH. This is useful for debugging. Use the functions in
 // draw.h to draw the various shapes. We have extended the AABB draw functions to support wireframe
 // mode, arbitrary colors and transparency.
 void BoundingVolumeHierarchy::debugDrawLevel(int level)
 {
-    std::vector<AxisAlignedBox> toDraw;
-    showLevel(nodes[nodes.size() - 1], 0, level);
+    
+    if (!drawSAH_Debug) // Classic BVH
+        showLevel(nodes[nodes.size() - 1], 0, level);
+    else // SAH 
+        showLevelSAH(nodes[nodes.size() - 1], 0, level);
 }
 
 void BoundingVolumeHierarchy::getLeaf(int index, int& leafIdx, int& result)

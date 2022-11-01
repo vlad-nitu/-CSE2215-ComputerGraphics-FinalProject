@@ -12,6 +12,8 @@ extern bool drawNormalInterpolationDebug;
 extern bool rayNodeIntersectionDebug;
 extern bool drawUnvisited;
 
+extern bool drawSAH_Debug; 
+
 struct Node {
     bool isLeaf; // false for interior node and true for leafs.
 
@@ -81,6 +83,9 @@ private:
     void subdivideNode(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth);
 
     void showLevel(const Node& node, int currentLevel, int targetLevel);
+
+    void showLevelSAH(const Node& node, int currentLevel, int targetLevel);
+
 
     void getLeaf(int index, int& leafIdx, int& result);
 
