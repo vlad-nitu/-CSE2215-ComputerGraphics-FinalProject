@@ -56,7 +56,6 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
 
             // Also trace the random focal point rays
             Lo += pixelColorDOF(scene, bvh, ray, features, rayDepth);
-
         }
     }
 
@@ -175,54 +174,22 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
 {
     glm::ivec2 windowResolution = screen.resolution();
     // Enable multi threading in Release mode
+
+    if (features.extra.enableMultipleRaysPerPixel) {
+        supersampling(samplesPerPixel, scene, camera, bvh, screen, features);
+    } else {
+
 #ifdef NDEBUG
 #pragma omp parallel for schedule(guided)
 #endif
-    for (int y = 0; y < windowResolution.y; y++) {
-        for (int x = 0; x != windowResolution.x; x++) {
-            // NOTE: (-1, -1) at the bottom left of the screen, (+1, +1) at the top right of the screen.
-            const glm::vec2 normalizedPixelPos {
-                float(x) / float(windowResolution.x) * 2.0f - 1.0f,
-                float(y) / float(windowResolution.y) * 2.0f - 1.0f
-            };
 
-            // Check if we need to turn on multiple rays per pixel
-            if (features.extra.enableMultipleRaysPerPixel) {
-
-                glm::vec3 pixelColor = glm::vec3 { 0 };
-
-                /*
-                 * Implementaion taken from:
-                 *
-                 * Fundamentals of Computer Graphics, 4th Edition, Steve Marschner and Peter Shirley
-                 * Chapter 13.4.1
-                 *
-                 * In order to perform irregular sampling we need to introduce some sort of randomness into our computations
-                 * However full randomness can create some problems, such as random patterns. This is why we have chosen to implement
-                 * an in-between algorithm. We subdive the pixle into n^2 smaller pixels and for each one of them we cast a random ray.
-                 *
-                 * This method retains the random property while making sure that no clusters or patterns arrise.
-                 */
-                for (int p = 0; p < samplesPerPixel; p++) {
-                    for (int q = 0; q < samplesPerPixel; q++) {
-
-                        // Compute the position inside the pixel where this ray should go through
-                        glm::vec2 samplePosition {
-                            (float(x + (float(p) + getRand()) / samplesPerPixel) / float(windowResolution.x)) * 2.0f - 1.0f,
-                            (float(y + (float(q) + getRand()) / samplesPerPixel) / float(windowResolution.y)) * 2.0f - 1.0f
-                        };
-
-                        const Ray sampleRay = camera.generateRay(samplePosition); // Compute the ray
-
-                        pixelColor += getFinalColor(scene, bvh, sampleRay, features);
-                    }
-                }
-
-                // Average the values
-                pixelColor /= samplesPerPixel * samplesPerPixel;
-                screen.setPixel(x, y, pixelColor);
-
-            } else {
+        for (int y = 0; y < windowResolution.y; y++) {
+            for (int x = 0; x != windowResolution.x; x++) {
+                // NOTE: (-1, -1) at the bottom left of the screen, (+1, +1) at the top right of the screen.
+                const glm::vec2 normalizedPixelPos {
+                    float(x) / float(windowResolution.x) * 2.0f - 1.0f,
+                    float(y) / float(windowResolution.y) * 2.0f - 1.0f
+                };
                 const Ray cameraRay = camera.generateRay(normalizedPixelPos);
                 screen.setPixel(x, y, getFinalColor(scene, bvh, cameraRay, features));
             }
