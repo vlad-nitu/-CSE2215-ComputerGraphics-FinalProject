@@ -145,6 +145,8 @@ std::vector<Mesh> loadMesh(const std::filesystem::path& file, bool centerAndNorm
     if (centerAndNormalize)
         centerAndScaleToUnitMesh(out);
 
+
+
     return out;
 }
 
