@@ -287,7 +287,7 @@ int main(int argc, char** argv)
                         // Insert debug config
                     }
                     if (ImGui::CollapsingHeader("SAH + Binning") && config.features.extra.enableBvhSahBinning) {
-                        // Insert debug config
+                        ImGui::Checkbox("Draw child boxes for SAH+Binning", &drawSAH_Debug); 
                     }
                     if (ImGui::CollapsingHeader("Bloom") && config.features.extra.enableBloomEffect) {
                         // Insert debug config
