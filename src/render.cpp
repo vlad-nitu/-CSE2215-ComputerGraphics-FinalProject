@@ -10,7 +10,7 @@
 // Import in order to perform second visual debug for BVH traversal
 #include <bounding_volume_hierarchy.h> // Ask TAs if allowed
 
-#include <supersampling.h>
+#include <extra/supersampling.h>
 
 #ifdef NDEBUG
 #include <omp.h>

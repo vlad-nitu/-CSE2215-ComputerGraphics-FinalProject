@@ -28,7 +28,8 @@ add_library(FinalProjectLib
 	"src/shading.cpp"
 	"src/interpolate.cpp"
 	"src/render.cpp"
-	"src/supersampling.cpp"
+	"src/extra/supersampling.cpp"
+	"src/extra/environment_map.cpp"
 )
 
 if (REFERENCE_MODE)
