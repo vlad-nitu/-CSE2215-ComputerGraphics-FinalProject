@@ -23,7 +23,6 @@ extern int max_ray_depth;
 extern bool showUnvisited;
 extern int traversalDebugDepth;
 
-extern bool drawDebugSupersamplingRays;
 extern int samplesPerPixel;
 
 extern float focalLength;

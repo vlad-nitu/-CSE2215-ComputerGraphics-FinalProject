@@ -22,6 +22,7 @@ enum SceneType {
     Teapot,
     Dragon,
     Spheres,
+    Texture,
     Custom,
 };
 

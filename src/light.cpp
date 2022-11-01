@@ -19,6 +19,8 @@ int SAMPLE_COUNT = 100;
 std::random_device rdConstant;
 unsigned seedConstant = rdConstant();
 
+bool transparencyShadowRays = false;
+
 // samples a segment light source
 // you should fill in the vectors position and color with the sampled position and color
 void sampleSegmentLight(const SegmentLight& segmentLight, glm::vec3& position, glm::vec3& color)
@@ -58,25 +60,56 @@ void sampleParallelogramLight(const ParallelogramLight& parallelogramLight, glm:
 // Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 4, Section 4.7, pp. 86-87
 float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& debugColor, const BvhInterface& bvh, const Features& features, Ray ray, HitInfo hitInfo)
 {
-    glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
-    glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
-    float tLight = glm::distance(samplePos, currentPoint);
+    // Check if we want shadow rays to work for transparent objects or not
+    if (features.extra.enableTransparency && transparencyShadowRays) {
+        glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
+        glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
+        float tLight = glm::distance(samplePos, currentPoint);
 
-    Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight - 0.0001f };
-    if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
-        if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
+        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight - 0.0001f };
+
+        if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
+
+            if (hitInfo.material.transparency < 1.0f) {
+                float incomigLightColor = (1.0f - hitInfo.material.transparency) * testVisibilityLightSample(samplePos, debugColor, bvh, features, pointTowardsLight, hitInfo);
+
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, incomigLightColor * debugColor);
+
+                return incomigLightColor;
+            } else {
+
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, glm::vec3 { 1, 0, 0 });
+                return 0.0f;
+            }
+
+        } else {
             if (drawShadowRayDebug)
                 drawRay(pointTowardsLight, debugColor);
             return 1.0f;
-        } else {
-            if (drawShadowRayDebug)
-                drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
-            return 0.0f;
         }
     } else {
-        if (drawShadowRayDebug)
-            drawRay(pointTowardsLight, debugColor);
-        return 1.0f;
+        glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
+        glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
+        float tLight = glm::distance(samplePos, currentPoint);
+
+        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight - 0.0001f };
+        if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
+            if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, debugColor);
+                return 1.0f;
+            } else {
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
+                return 0.0f;
+            }
+        } else {
+            if (drawShadowRayDebug)
+                drawRay(pointTowardsLight, debugColor);
+            return 1.0f;
+        }
     }
 }
 
@@ -202,7 +235,7 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             }
         }
 
-        //return (result / static_cast<float>(scene.lights.size()));
+        // return (result / static_cast<float>(scene.lights.size()));
         return result;
 
     } else {

@@ -114,6 +114,7 @@ int main(int argc, char** argv)
                     "Teapot",
                     "Dragon",
                     /* "AABBs",*/ "Spheres", /*"Mixed",*/
+                    "Texture Debug",
                     "Custom",
                 };
                 if (ImGui::Combo("Scenes", reinterpret_cast<int*>(&sceneType), items.data(), int(items.size()))) {
@@ -184,7 +185,8 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 if (config.features.extra.enableTransparency) {
-                    // Insert config
+                    ImGui::Bullet();
+                    ImGui::Checkbox("Shadow rays check transparency", &transparencyShadowRays);
                 }
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
@@ -288,7 +290,7 @@ int main(int argc, char** argv)
                         // Insert debug config
                     }
                     if (ImGui::CollapsingHeader("SAH + Binning") && config.features.extra.enableBvhSahBinning) {
-                        // Insert debug config
+                        ImGui::Checkbox("Draw child boxes for SAH+Binning", &drawSAH_Debug); 
                     }
                     if (ImGui::CollapsingHeader("Bloom") && config.features.extra.enableBloomEffect) {
                         // Insert debug config
