@@ -7,5 +7,8 @@ DISABLE_WARNINGS_POP()
 #include <framework/ray.h>
 #include <framework/image.h>
 
+struct Features;
 
-glm::vec3 getEnvironmentColor(const glm::vec3& lightDirection);
+extern Image environment;
+
+glm::vec3 getEnvironmentColor(const glm::vec3& lightDirection, const Features& features);

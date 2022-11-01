@@ -10,6 +10,7 @@
 // Import in order to perform second visual debug for BVH traversal
 #include <bounding_volume_hierarchy.h> // Ask TAs if allowed
 
+#include <extra/environment_map.h>
 #include <extra/supersampling.h>
 
 #ifdef NDEBUG
@@ -118,19 +119,36 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         // Set the color of the pixel.
         return Lo;
     } else {
-        // Draw a red debug ray if the ray missed.
-        drawRay(ray, glm::vec3(1.0f, 0.0f, 0.0f));
-        // Set the color of the pixel to black if the ray misses.
 
-        // Check if the rays come from the camera
-        if (rayDepth == 1) {
-            // Implement DOF
-            if (features.extra.enableDepthOfField) {
-                Lo /= DOFsamples; // Average the results without main ray
+        if (features.extra.enableEnvironmentMapping) {
+
+            Lo += getEnvironmentColor(ray.direction, features);
+            drawRay(ray, Lo);
+
+            if (rayDepth == 1) {
+                // Implement DOF
+                if (features.extra.enableDepthOfField) {
+                    Lo /= DOFsamples; // Average the results without main ray
+                }
             }
-        }
 
-        return Lo;
+            return Lo;
+
+        } else {
+            // Draw a red debug ray if the ray missed.
+            drawRay(ray, glm::vec3(1.0f, 0.0f, 0.0f));
+            // Set the color of the pixel to black if the ray misses.
+
+            // Check if the rays come from the camera
+            if (rayDepth == 1) {
+                // Implement DOF
+                if (features.extra.enableDepthOfField) {
+                    Lo /= DOFsamples; // Average the results without main ray
+                }
+            }
+
+            return Lo;
+        }
     }
 }
 
