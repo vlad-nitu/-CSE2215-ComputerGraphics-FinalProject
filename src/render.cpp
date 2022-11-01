@@ -26,8 +26,6 @@ int max_ray_depth = 1;
 bool showUnvisited = false;
 int traversalDebugDepth = 1;
 
-// Debug for supersampling
-bool drawDebugSupersamplingRays = false;
 int samplesPerPixel = 2; // Sample size per pixel
 
 // Set focal length for depth of field
