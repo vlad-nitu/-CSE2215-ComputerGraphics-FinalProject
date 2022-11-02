@@ -55,7 +55,8 @@ glm::vec3 getEnvironmentColor(const glm::vec3& lightDirection, const Features& f
 
 int getImageAndCoord(const glm::vec3& lightDirection, float& u, float& v)
 {
-    float absX = fabs(lightDirection.x);
+    // Compute in order to compare the power of each axis
+    float absX = fabs(lightDirection.x); 
     float absY = fabs(lightDirection.y);
     float absZ = fabs(lightDirection.z);
 
@@ -67,7 +68,7 @@ int getImageAndCoord(const glm::vec3& lightDirection, float& u, float& v)
 
     float maxAxis, uc, vc;
 
-    // POSITIVE X
+    // POSITIVE X and it it the most powerful in absolute term
     if (isXPositive && absX >= absY && absX >= absZ) {
         // u (0 to 1) goes from +z to -z
         // v (0 to 1) goes from -y to +y
@@ -76,35 +77,35 @@ int getImageAndCoord(const glm::vec3& lightDirection, float& u, float& v)
         vc = lightDirection.y;
         index = 0;
     }
-    // NEGATIVE X
+    // NEGATIVE X and it it the most powerful in absolute term
     if (!isXPositive && absX >= absY && absX >= absZ) {
         maxAxis = absX;
         uc = lightDirection.z;
         vc = lightDirection.y;
         index = 1;
     }
-    // POSITIVE Y
+    // POSITIVE Y and it it the most powerful in absolute term
     if (isYPositive && absY >= absX && absY >= absZ) {
         maxAxis = absY;
         uc = lightDirection.x;
         vc = -lightDirection.z;
         index = 2;
     }
-    // NEGATIVE Y
+    // NEGATIVE Y and it it the most powerful in absolute term
     if (!isYPositive && absY >= absX && absY >= absZ) {
         maxAxis = absY;
         uc = lightDirection.x;
         vc = lightDirection.z;
         index = 3;
     }
-    // POSITIVE Z
+    // POSITIVE Z and it it the most powerful in absolute term
     if (isZPositive && absZ >= absX && absZ >= absY) {
         maxAxis = absZ;
         uc = lightDirection.x;
         vc = lightDirection.y;
         index = 4;
     }
-    // NEGATIVE Z
+    // NEGATIVE Z and it it the most powerful in absolute term
     if (!isZPositive && absZ >= absX && absZ >= absY) {
         maxAxis = absZ;
         uc = -lightDirection.x;
