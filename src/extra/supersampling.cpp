@@ -7,6 +7,8 @@
 #include <omp.h>
 #endif
 
+bool debugSupersampling = false;
+
 Ray generateSample(const int x, const int y, const int p, const int q, const glm::ivec2& windowResolution, const Trackball& camera)
 {
     glm::vec2 samplePosition {
@@ -43,7 +45,17 @@ void supersampling(const int sampleCount, const Scene& scene, const Trackball& c
 
     for (int y = 0; y < windowResolution.y; y++) {
         for (int x = 0; x != windowResolution.x; x++) {
-            screen.setPixel(x, y, pixelResult(sampleCount, x, y, windowResolution, camera, scene, bvh, features));
+
+            if (debugSupersampling && y < windowResolution.y / 2) {
+                const glm::vec2 normalizedPixelPos {
+                    float(x) / float(windowResolution.x) * 2.0f - 1.0f,
+                    float(y) / float(windowResolution.y) * 2.0f - 1.0f
+                };
+
+                screen.setPixel(x, y, getFinalColor(scene, bvh, camera.generateRay(normalizedPixelPos), features));
+            } else {
+                screen.setPixel(x, y, pixelResult(sampleCount, x, y, windowResolution, camera, scene, bvh, features));
+            }
         }
     }
 }

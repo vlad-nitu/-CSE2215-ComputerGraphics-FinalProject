@@ -13,6 +13,8 @@ class Trackball;
 class BvhInterface;
 struct Features;
 
+extern bool debugSupersampling;
+
 Ray generateSample(const int x, const int y, const int p, const int q, const glm::ivec2& windowResolution, const Trackball& camera);
 
 glm::vec3 pixelResult(const int sampleCount, const int x, const int y, const glm::ivec2& windowResolution, const Trackball& camera, const Scene& scene, const BvhInterface& bvh, const Features& features);

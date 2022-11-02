@@ -4,6 +4,7 @@
 #include "render.h"
 #include "screen.h"
 #include "bounding_volume_hierarchy.h"
+#include "extra/supersampling.h"
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -301,7 +302,8 @@ int main(int argc, char** argv)
                         // Insert debug config
                     }
                     if (ImGui::CollapsingHeader("Supersampling") && config.features.extra.enableMultipleRaysPerPixel) {
-                        ImGui::Text("Supersampling debug is available in raytracing mode");
+                        ImGui::Text("When debug is enabled the only the top half of the screen will be affected");
+                        ImGui::Checkbox("Enable supersmapling debug", &debugSupersampling);
                     }
                     if (ImGui::CollapsingHeader("Glossy reflection") && config.features.extra.enableGlossyReflection) {
                         // Insert debug config
