@@ -11,10 +11,10 @@ glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Feat
      *
      * This moves the values in the interval [0,1) so that they can be assigned a pixel
      */
-    u = std::min(1.0f, u);
+    u = std::min(1.0f - 1e-6f, u);
     u = std::max(0.0f, u);
 
-    v = std::min(1.0f, v);
+    v = std::min(1.0f - 1e-6f, v);
     v = std::max(0.0f, v);
 
     int col = u * image.width; // Convert to int so values are rounded down representing the line
