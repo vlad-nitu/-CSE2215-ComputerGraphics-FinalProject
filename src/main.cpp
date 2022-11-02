@@ -121,7 +121,15 @@ int main(int argc, char** argv)
                     optDebugRay.reset();
                     scene = loadScenePrebuilt(sceneType, config.dataPath);
                     selectedLightIdx = scene.lights.empty() ? -1 : 0;
+
+                    using clock = std::chrono::high_resolution_clock;
+                    const auto start = clock::now();
+
                     bvh = BvhInterface(&scene, config.features);
+
+                    const auto end = clock::now();
+                    std::cout << "Time to build BVH: " << std::chrono::duration<float, std::milli>(end - start).count() << " milliseconds" << std::endl;
+
                     if (optDebugRay) {
                         HitInfo dummy {};
                         bvh.intersect(*optDebugRay, dummy, config.features);
