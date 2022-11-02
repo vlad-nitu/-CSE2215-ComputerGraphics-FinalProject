@@ -3,8 +3,30 @@
 #include <texture.h>
 #include <framework/image.h>
 #include <numbers>
+#include <draw.h>
 
 Image environment = Image(".\\..\\..\\..\\data\\environment.png");
+
+bool drawEdgeRays = false;
+
+std::vector<glm::vec3> debugRays = {
+    glm::vec3 { 1, 1, 1 }, // 0
+    glm::vec3 { 1, 1, -1 }, // 1
+    glm::vec3 { 1, -1, 1 }, // 2
+    glm::vec3 { 1, -1, -1 }, // 3
+    glm::vec3 { -1, 1, 1 }, // 4
+    glm::vec3 { -1, 1, -1 }, // 5
+    glm::vec3 { -1, -1, 1 }, // 6
+    glm::vec3 { -1, -1, -1 }, // 7
+};
+std::vector<glm::vec4> debugRaysPositions = {
+    glm::vec4 {0, 1, 2, 3},
+    glm::vec4 {4, 6, 5, 7},
+    glm::vec4 {0, 4, 5, 1},
+    glm::vec4 {2, 6, 7, 3},
+    glm::vec4 {2, 6, 4, 0},
+    glm::vec4 {1, 5, 7, 3},
+};
 std::vector<Image> cubeMap = {
     // Positive and negative x
     Image(".\\..\\..\\..\\data\\right.png"),
@@ -102,6 +124,13 @@ glm::vec3 getCubeMapColor(const glm::vec3& lightDirection, const Features& featu
     float u;
     float v;
     int index = getImageAndCoord(lightDirection, u, v);
+
+    if (drawEdgeRays) {
+        drawRay({ glm::vec3 { 0 }, debugRays[debugRaysPositions[index].x] }, glm::vec3 { 0, 1, 0.76 });
+        drawRay({ glm::vec3 { 0 }, debugRays[debugRaysPositions[index].y] }, glm::vec3 { 0, 1, 0.76 });
+        drawRay({ glm::vec3 { 0 }, debugRays[debugRaysPositions[index].z] }, glm::vec3 { 0, 1, 0.76 });
+        drawRay({ glm::vec3 { 0 }, debugRays[debugRaysPositions[index].w] }, glm::vec3 { 0, 1, 0.76 });
+    }
 
     return acquireTexel(cubeMap[index], glm::vec2 { u, v }, features);
 }

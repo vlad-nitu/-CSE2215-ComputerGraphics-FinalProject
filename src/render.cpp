@@ -27,7 +27,7 @@ int max_ray_depth = 1;
 bool showUnvisited = false;
 int traversalDebugDepth = 1;
 
-bool useSphereEnvironment = true;
+bool useSphereEnvironment = false;
 
 int samplesPerPixel = 2; // Sample size per pixel
 
