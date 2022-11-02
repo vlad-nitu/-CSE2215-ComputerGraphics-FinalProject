@@ -172,8 +172,6 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                 // Averaging the shading result
                 result += (color / static_cast<float>(SAMPLE_COUNT));
 
-                // If soft shadows are disabled and a point light source is absent, the scene will appear black!
-
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
@@ -202,7 +200,6 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             }
         }
 
-        //return (result / static_cast<float>(scene.lights.size()));
         return result;
 
     } else {
