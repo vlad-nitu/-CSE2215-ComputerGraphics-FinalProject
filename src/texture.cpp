@@ -3,22 +3,20 @@
 
 glm::vec3 acquireTexel(const Image& image, const glm::vec2& texCoord, const Features& features)
 {
-    float u = texCoord.x;
-    float v = texCoord.y;
+    int col = texCoord.x * image.width; // Convert to int so values are rounded down representing the line
+    int row = texCoord.y * image.height; // Convert to int so values are rounded down representing the column
+
 
     /*
      * We clamp values to make sure we don't use the wrong pixels for edges or outside normal coordinates
      *
      * This moves the values in the interval [0,1) so that they can be assigned a pixel
      */
-    u = std::min(1.0f - 1e-6f, u);
-    u = std::max(0.0f, u);
+    col = std::min(col, image.width - 1);
+    col = std::max(col, 0);
 
-    v = std::min(1.0f - 1e-6f, v);
-    v = std::max(0.0f, v);
-
-    int col = u * image.width; // Convert to int so values are rounded down representing the line
-    int row = v * image.height; // Convert to int so values are rounded down representing the column
+    row = std::min(row, image.height - 1);
+    row = std::max(row, 0);
 
     /*
     * Images are stored top to bottom but coordinates are bottom to top
