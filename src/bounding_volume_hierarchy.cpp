@@ -13,6 +13,7 @@ bool drawNormalInterpolationDebug = false;
 // Draw the debug for BVH traversal
 bool rayNodeIntersectionDebug = false;
 bool drawUnvisited = false;
+bool drawSAH_Debug = false;
 
 /// <summary>
 /// Given a primitive's index it will update the minimum and maximum coordinates of an AABBs corners
@@ -63,12 +64,10 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 /// <param name="depth"> The depth of the given node. </param>
 void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth)
 {
-    // computeAABB(node);
-
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
 
-    if (node.children.size() <= 4) {
+    if (node.children.size() <= 5) {
         nodes.push_back(node); // Add the node to the hierarchy
 
         return;
@@ -132,6 +131,195 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::v
     }
 }
 
+void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth)
+{
+    // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
+    m_numLevels = std::max(m_numLevels, depth + 1);
+
+    if (node.children.size() <= MAX_PRIMITIVES_PER_LEAF || depth >= MAX_DEPTH) {
+        nodes.push_back(node); // Add the node to the hierarchy
+        return;
+    }
+
+    // compute AABB of centroids of triangles
+    glm::vec3 low_aabb = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 high_aabb = glm::vec3 { -std::numeric_limits<float>::max() };
+
+    int primitives = node.children.size();
+
+    for (int i = 0; i < primitives; ++i) {
+        updateAABB_SAH(centroids[node.children[i]], low_aabb, high_aabb);
+    }
+
+    float max_val = -std::numeric_limits<float>::max();
+    int axis = -1;
+    float cbmin, cbmax;
+
+    if (high_aabb.x - low_aabb.x > max_val) {
+        max_val = high_aabb.x - low_aabb.x;
+        cbmin = low_aabb.x;
+        cbmax = high_aabb.x;
+        axis = 0;
+    }
+
+    if (high_aabb.y - low_aabb.y > max_val) {
+        max_val = high_aabb.y - low_aabb.y;
+        cbmin = low_aabb.y;
+        cbmax = high_aabb.y;
+        axis = 1;
+    }
+
+    if (high_aabb.z - low_aabb.z > max_val) {
+        max_val = high_aabb.z - low_aabb.z;
+        cbmin = low_aabb.z;
+        cbmax = high_aabb.z;
+        axis = 2;
+    }
+
+    std::vector<SahAABB> bins(N_BINS);
+    float centr;
+
+    // Place every triangle in the corresponding bin
+    for (int i = 0; i < primitives; ++i) {
+        if (axis == 0)
+            centr = centroids[node.children[i]].x;
+        else if (axis == 1)
+            centr = centroids[node.children[i]].y;
+        else
+            centr = centroids[node.children[i]].z;
+
+        int bin_index = (1 - EPSILON) * N_BINS * (centr - cbmin) / (cbmax - cbmin);
+        updateAABB(node.children[i], bins[bin_index].bounds.lower, bins[bin_index].bounds.upper);
+        bins[bin_index].primitiveIndexes.push_back(i);
+    }
+
+    // Store volume and # of primitives for each bin
+    std::pair<float, int> defaulted { 0.0f, 0 };
+    std::vector<std::pair<float, int>> costs(N_BINS, defaulted);
+
+    // Precompute left->right then use precomputation when traversing right->left in order to obtain linear time complexity
+    costs[0] = (std::make_pair(volume(bins[0].bounds), bins[0].primitiveIndexes.size()));
+    AxisAlignedBox updated_box = bins[0].bounds;
+    int added_triangles = bins[0].primitiveIndexes.size();
+
+    for (int idx = 1; idx < N_BINS; ++idx) { // left->right
+
+        if (!bins[idx].primitiveIndexes.empty()) // compute cost
+        {
+            unionBoxes(updated_box, bins[idx].bounds);
+            added_triangles += bins[idx].primitiveIndexes.size();
+
+            std::pair<float, int> curr_cost = { volume(updated_box), added_triangles };
+            costs[idx] = curr_cost;
+        }
+    }
+
+    int split_idx = -1;
+    float min_val = std::numeric_limits<float>::max();
+
+    updated_box = bins[N_BINS - 1].bounds;
+    added_triangles = bins[N_BINS - 1].primitiveIndexes.size();
+
+    for (int idx = N_BINS - 2; idx >= 0; --idx) {
+
+        if (!bins[idx].primitiveIndexes.empty()) // compute cost if there exist primitives inside current bin
+        {
+            unionBoxes(updated_box, bins[idx].bounds);
+            added_triangles += bins[idx].primitiveIndexes.size();
+
+            float vol = volume(updated_box);
+
+            float cost = costs[idx].first * costs[idx].second + vol * added_triangles;
+
+            if (costs[idx].first * costs[idx].second <= OFFSET || vol * added_triangles <= OFFSET) // if there are no primitives to the left OR to the right of the bin -> do not perform split
+                continue;
+
+            if (cost < min_val) // both splits are not empty
+            {
+                min_val = cost;
+                split_idx = idx;
+            }
+        }
+    }
+
+    if (split_idx == -1 || min_val == std::numeric_limits<float>::max()) {
+        node.isLeaf = true;
+        return;
+    }
+
+    // We further need to subdivide
+    node.isLeaf = false;
+    m_numLeaves--; // Current node is no longer a leaf
+
+    Node leftChild = Node(true);
+    Node rightChild = Node(true);
+    m_numLeaves += 2; // Children are by default leafs
+
+    // Move the primitives to the children based on the centroids
+    glm::vec3 leftMin = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 leftMax = glm::vec3 { -std::numeric_limits<float>::max() };
+
+    glm::vec3 rightMin = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 rightMax = glm::vec3 { -std::numeric_limits<float>::max() };
+
+    for (int i = 0; i <= split_idx; i++)
+        for (int j = 0; j < bins[i].primitiveIndexes.size(); ++j) {
+            leftChild.children.push_back(node.children[bins[i].primitiveIndexes[j]]);
+            updateAABB(node.children[bins[i].primitiveIndexes[j]], leftMin, leftMax); // Update the AABB of the left child
+        }
+
+    for (int i = split_idx + 1; i < N_BINS; ++i)
+        for (int j = 0; j < bins[i].primitiveIndexes.size(); ++j) {
+            rightChild.children.push_back(node.children[bins[i].primitiveIndexes[j]]);
+            updateAABB(node.children[bins[i].primitiveIndexes[j]], rightMin, rightMax); // Update the AABB of the left child
+        }
+
+    // Assign AABBs to children nodes
+    leftChild.lower = leftMin;
+    leftChild.upper = leftMax;
+
+    rightChild.lower = rightMin;
+    rightChild.upper = rightMax;
+
+    node.children.clear(); // Remove the children index from the parent
+
+    subdivideNodeSah(leftChild, centroids, depth + 1);
+    node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
+
+    subdivideNodeSah(rightChild, centroids, depth + 1);
+    node.children.push_back(nodes.size() - 1); // Remember the index of the right child for the parent
+
+    nodes.push_back(node);
+}
+
+void BoundingVolumeHierarchy::updateAABB_SAH(const glm::vec3& v, glm::vec3& lower, glm::vec3& upper)
+{
+    lower = glm::min(v, lower);
+    upper = glm::max(v, upper);
+    return;
+}
+
+void BoundingVolumeHierarchy::unionBoxes(AxisAlignedBox& updated_box, const AxisAlignedBox& next_box)
+{
+    updated_box.lower = glm::min(updated_box.lower, glm::min(next_box.lower, next_box.upper));
+    updated_box.upper = glm::max(updated_box.upper, glm::max(next_box.lower, next_box.upper));
+    return;
+}
+
+float BoundingVolumeHierarchy::volume(const AxisAlignedBox& AABB)
+{
+    glm::vec3 diff = AABB.upper - AABB.lower;
+    return (diff.x * diff.y * diff.z);
+}
+
+glm::vec3 BoundingVolumeHierarchy::computeAABB_centroid(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2)
+{
+    glm::vec3 lower = glm::min(v0, glm::min(v1, v2));
+    glm::vec3 upper = glm::max(v0, glm::max(v1, v2));
+    AxisAlignedBox aabb = { lower, upper };
+    return (lower + upper) / glm::vec3 { 2 };
+}
+
 BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)
     : m_pScene(pScene)
 {
@@ -143,7 +331,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      *
      * Follows the same ordering as for the flattened list of triangles used in the node struct
      */
-    std::vector<glm::vec3> centroids;
+    std::vector<glm::vec3> centroids {};
 
     Node root = Node(true);
 
@@ -157,9 +345,14 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
             const auto& v1 = mesh.vertices[tri[1]].position;
             const auto& v2 = mesh.vertices[tri[2]].position;
 
-            // Compute centroids
-            glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
-            centroids.push_back(centre);
+            if (features.extra.enableBvhSahBinning) {
+                // Compute centroid computed on AABB centroid instead of triangle's centroid
+                centroids.push_back(computeAABB_centroid(v0, v1, v2));
+            } else {
+                // Compute centroids
+                glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
+                centroids.push_back(centre);
+            }
 
             // Compute root's AABB boundry
             low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
@@ -188,7 +381,10 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.lower = low;
     root.upper = high;
 
-    subdivideNode(root, centroids, 0, 0);
+    if (features.extra.enableBvhSahBinning)
+        subdivideNodeSah(root, centroids, 0);
+    else
+        subdivideNode(root, centroids, 0, 0);
 }
 
 // Return the depth of the tree that you constructed. This is used to tell the
@@ -219,13 +415,35 @@ void BoundingVolumeHierarchy::showLevel(const Node& node, int currentLevel, int 
     }
 }
 
+void BoundingVolumeHierarchy::showLevelSAH(const Node& node, int currentLevel, int targetLevel)
+{
+    if (currentLevel == targetLevel) {
+
+        if (!node.isLeaf) // make sure that children exist
+        {
+            AxisAlignedBox aabb_left { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
+            AxisAlignedBox aabb_right { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
+
+            drawAABB(aabb_left, DrawMode::Wireframe, glm::vec3 { 0, 1, 0 }, 0.4f);
+            drawAABB(aabb_right, DrawMode::Wireframe, glm::vec3 { 1, 0, 0 }, 0.4f);
+        }
+
+    } else if (!node.isLeaf) {
+        // only recurse on left child for debug purpose
+        showLevelSAH(nodes[node.children[0]], currentLevel + 1, targetLevel);
+    }
+}
+
 // Use this function to visualize your BVH. This is useful for debugging. Use the functions in
 // draw.h to draw the various shapes. We have extended the AABB draw functions to support wireframe
 // mode, arbitrary colors and transparency.
 void BoundingVolumeHierarchy::debugDrawLevel(int level)
 {
-    std::vector<AxisAlignedBox> toDraw;
-    showLevel(nodes[nodes.size() - 1], 0, level);
+
+    if (!drawSAH_Debug) // Classic BVH
+        showLevel(nodes[nodes.size() - 1], 0, level);
+    else // SAH
+        showLevelSAH(nodes[nodes.size() - 1], 0, level);
 }
 
 void BoundingVolumeHierarchy::getLeaf(int index, int& leafIdx, int& result)
@@ -437,6 +655,10 @@ bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo
                     hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord);
 
                     hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+
+                    if (features.enableTextureMapping || features.extra.enableMipmapTextureFiltering) {
+                        hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
+                    }
                 } else {
                     glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
@@ -528,6 +750,11 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                         hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord); // Interpolate normal
 
                         hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+
+                        // Check if textures are turned on
+                        if (features.enableTextureMapping || features.extra.enableMipmapTextureFiltering) {
+                            hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
+                        }
 
                     } else {
                         glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
@@ -649,7 +876,7 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                 queue.push({ 0, node.children[1] }); // Insert the node as a primitive can be intersected at any time
 
                             } else if (intersectRayWithShape(rightChildBox, ray)) {
-                            
+
                                 // Insert into queue only if the node has potential for a better intersection
                                 if (ray.t <= oldT)
                                     queue.push({ ray.t, node.children[1] });
@@ -657,7 +884,6 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                                 // Reset the old intersection value
                                 ray.t = oldT;
                             }
-
                         }
                     }
 
@@ -674,7 +900,6 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
             // Draw debug features for the hit primitive
             if (hitPrimitive && (rayNodeIntersectionDebug || drawNormalInterpolationDebug))
                 drawPrimitive(hitIndex, ray, features, hitInfo);
-
         }
 
         return hitPrimitive;

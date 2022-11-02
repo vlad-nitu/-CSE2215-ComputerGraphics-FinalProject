@@ -211,3 +211,25 @@ void drawRay(const Ray& ray, const glm::vec3& color)
 
     glPopAttrib();
 }
+
+void drawSphereCustom(float radius, glm::vec3& color, const Ray& ray) { 
+
+    glm::vec3 ray_dir = ray.origin+ ray.t * ray.direction; 
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glColor4f(color.r, color.g, color.b, 0.3f);
+    glPolygonMode(GL_FRONT, GL_FILL);
+    glPolygonMode(GL_BACK, GL_FILL);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    const glm::mat4 transform = glm::translate(glm::identity<glm::mat4>(), ray_dir);
+    glMultMatrixf(glm::value_ptr(transform));
+    auto quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_LINE);
+    gluSphere(quadric, radius, 24, 24);
+    glPopMatrix();
+
+    glPopAttrib();
+
+}
