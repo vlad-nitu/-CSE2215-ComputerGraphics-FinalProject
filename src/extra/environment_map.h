@@ -9,6 +9,8 @@ DISABLE_WARNINGS_POP()
 
 struct Features;
 
-extern Image environment;
-
 glm::vec3 getEnvironmentColor(const glm::vec3& lightDirection, const Features& features);
+
+int getImageAndCoord(const glm::vec3& lightDirection, float& u, float& v);
+
+glm::vec3 getCubeMapColor(const glm::vec3& lightDirection, const Features& features);

@@ -27,6 +27,8 @@ int max_ray_depth = 1;
 bool showUnvisited = false;
 int traversalDebugDepth = 1;
 
+bool useSphereEnvironment = true;
+
 int samplesPerPixel = 2; // Sample size per pixel
 
 // Set focal length for depth of field
@@ -122,7 +124,10 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
 
         if (features.extra.enableEnvironmentMapping) {
 
-            Lo += getEnvironmentColor(ray.direction, features);
+            if (useSphereEnvironment)
+                Lo += getEnvironmentColor(ray.direction, features);
+            else
+                Lo += getCubeMapColor(ray.direction, features);
 
             if (drawDebugShading)
                 drawRay(ray, Lo);

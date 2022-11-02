@@ -157,7 +157,8 @@ int main(int argc, char** argv)
             if (ImGui::CollapsingHeader("Extra Features")) {
                 ImGui::Checkbox("Environment mapping", &config.features.extra.enableEnvironmentMapping);
                 if (config.features.extra.enableEnvironmentMapping) {
-                    // Insert config
+                    ImGui::Bullet();
+                    ImGui::Checkbox("Use sphere-mapping instead of cube-mapping", &useSphereEnvironment);
                 }
                 ImGui::Checkbox("BVH SAH binning", &config.features.extra.enableBvhSahBinning);
                 if (config.features.extra.enableBvhSahBinning) {
