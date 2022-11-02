@@ -123,7 +123,11 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         if (features.extra.enableEnvironmentMapping) {
 
             Lo += getEnvironmentColor(ray.direction, features);
-            drawRay(ray, Lo);
+
+            if (drawDebugShading)
+                drawRay(ray, Lo);
+            else
+                drawRay(ray, glm::vec3 { 1 });
 
             if (rayDepth == 1) {
                 // Implement DOF
