@@ -33,6 +33,9 @@ float focalLength = 4.0f;
 float aperture = 0.05f;
 int DOFsamples = 1;
 
+// Constant seed used when debugging
+// N.B.: Not using a dynamically-computed seed (the random device and the seed are computed only once every run)
+// Otherwise, once the project is run, the perturbed samples would be continuously recalculated, and debugging would be difficult.
 std::random_device rdGlossyConstant;
 unsigned seedGlossyConstant = rdGlossyConstant();
 
@@ -146,10 +149,11 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
                         glm::vec3 U = glm::normalize(glm::cross(T, reflectionDirection));
                         glm::vec3 V = glm::cross(reflectionDirection, U);
 
-                        // Used for generating uniform random numbers in the interval [0; 1)
+                        // Dynamically-computed seed used when rendering
                         std::random_device rdDynamic;
                         unsigned seedDynamic = rdDynamic();
 
+                        // Distinguish between debugging (constant seed) or rendering (dynamically-computed seed)
                         unsigned seed = 0;
                         if (glossyConstantSeed) {
                             seed = seedGlossyConstant;
@@ -157,6 +161,7 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
                             seed = seedDynamic;
                         }
 
+                        // Used for generating uniform random numbers in the interval [0; 1)
                         std::default_random_engine engine(seed);
                         std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
 
@@ -279,13 +284,16 @@ glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, c
     return color;
 }
 
+// Apply box filter (as shown in the slides for lecture 2 of the course)
 glm::vec3 boxFilter(std::vector<std::vector<glm::vec3>>& pixelGrid, int x, int y, int givenFilterSize)
 {
     glm::vec3 result = glm::vec3(0.0f);
 
     for (int i = -givenFilterSize; i < (givenFilterSize + 1); i++) {
         for (int j = -givenFilterSize; j < (givenFilterSize + 1); j++) {
+
             result += pixelGrid[x + i][y + j];
+
         }
     }
 
@@ -293,18 +301,28 @@ glm::vec3 boxFilter(std::vector<std::vector<glm::vec3>>& pixelGrid, int x, int y
     return (result / static_cast<float>(denominator));
 }
 
+// Apply bloom filter (only keeping colors with a relative luminance greater than the chosen threshold)
 void bloomFilter(glm::ivec2& resolution, std::vector<std::vector<glm::vec3>>& pixelGrid, float givenThreshold, int givenFilterSize)
 {
     for (int y = 0; y < resolution.y; y++) {
         for (int x = 0; x < resolution.x; x++) {
 
             glm::vec3 originalColor = pixelGrid[x + givenFilterSize][y + givenFilterSize];
+
+            // Calculating the relative luminance of the current RGB values
+            // Reference used: https://en.wikipedia.org/wiki/Relative_luminance
             float valueToCheck = glm::dot(originalColor, glm::vec3(0.2126f, 0.7152f, 0.0722f));
 
             if (valueToCheck > givenThreshold) {
+                
+                // If the relative luminance meets the threshold, keep the original color
                 continue;
+
             } else {
+
+                // Otherwise, replace the original color with black [RGB(0, 0, 0)]
                 pixelGrid[x + givenFilterSize][y + givenFilterSize] = glm::vec3(0.0f);
+
             }
 
         }
@@ -340,27 +358,51 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
     if (features.extra.enableBloomEffect) {
         std::vector<glm::vec3> originalColors = screen.pixels();
 
+        // Create an extended grid containing the screen's original pixels and a border of length "filterSize"
+        // -> The border will come into place once the original colors are stored within the grid
+        // -> It surrounds the internal-screen positions from each side (top, right, bottom, left)
+        // -> Its purpose is to ensure that box filtering will be possible everywhere across the internal-screen positions
+        // -> (particularly those at the edges of the screen's original pixels)
+        // -> (there, the box filter would otherwise attempt to access out-of-bounds positions)
+        // 
+        // Initialize every position (both borders and internal-screen positions) with black [RGB(0, 0, 0)]
         std::vector<std::vector<glm::vec3>> extendedPixelGrid(size_t(windowResolution.x + 2 * filterSize));
         for (int i = 0; i < windowResolution.x + 2 * filterSize; i++) {
+
             std::vector<glm::vec3> rowWithBorder(size_t(windowResolution.y + 2 * filterSize), glm::vec3(0.0f));
             extendedPixelGrid[i] = rowWithBorder;
+
         }
 
+        // Store the screen's original pixels within the grid (this way also creating the border)
         for (int y = 0; y < windowResolution.y; y++) {
             for (int x = 0; x != windowResolution.x; x++) {
+
+                // Introduce offsets of "filterSize" to keep the border intact
                 extendedPixelGrid[x + filterSize][y + filterSize] = originalColors[screen.indexAt(x, y)];
+
             }
         }
 
+        // Perform bloom filter (keep only those values with a relative luminosity greater than the chosen threshold)
         bloomFilter(windowResolution, extendedPixelGrid, threshold, filterSize);
 
         for (int y = filterSize; y < windowResolution.y + filterSize; y++) {
             for (int x = filterSize; x < windowResolution.x + filterSize; x++) {
 
                 if (bloomDebug) {
+
+                    // Visual debug -> display ONLY the bloom filter pixels (nothing else)
+                    // N.B.: all other previously-computed information is discarded (this checkbox should ONLY be used for debugging)
+                    // -> when the aim is to render a complete image, uncheck the "bloomDebug" box
+                    // -> with this separation, the effects of the chosen scalingFactor and filterSize become more easily-interpretable
                     screen.setPixel(x - filterSize, y - filterSize, scalingFactor * boxFilter(extendedPixelGrid, x, y, filterSize));
+
                 } else {
+
+                    // Add the resulting color to the corresponding original pixel (multiplying by the scalingFactor to regulate the brightness)
                     screen.setPixel(x - filterSize, y - filterSize, originalColors[screen.indexAt(x - filterSize, y - filterSize)] + scalingFactor * boxFilter(extendedPixelGrid, x, y, filterSize));
+
                 }
 
             }
