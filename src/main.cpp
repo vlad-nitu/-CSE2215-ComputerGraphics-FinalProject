@@ -307,7 +307,8 @@ int main(int argc, char** argv)
                         // Insert debug config
                     }
                     if (ImGui::CollapsingHeader("Mipmapping") && config.features.extra.enableMipmapTextureFiltering) {
-                        // Insert debug config
+                        ImGui::Text("MipMap Filtering");
+                        ImGui::Checkbox("Draw MipMap closest two levels", &drawMipMapDebug);
                     }
                     if (ImGui::CollapsingHeader("Supersampling") && config.features.extra.enableMultipleRaysPerPixel) {
                         ImGui::Text("Supersampling debug is available in raytracing mode");
@@ -324,10 +325,6 @@ int main(int argc, char** argv)
                         
                 }
 
-                if (config.features.extra.enableMipmapTextureFiltering){
-                    ImGui::Text("MipMap Filtering");
-                    ImGui::Checkbox("Draw MipMap closest two levels", &drawMipMapDebug);
-                }
             }
             else 
                 drawMipMapDebug = false; 
