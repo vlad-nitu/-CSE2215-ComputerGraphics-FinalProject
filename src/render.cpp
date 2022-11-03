@@ -35,6 +35,8 @@ int DOFsamples = 1;
 
 int numPerturbedSamples = 50;
 
+bool bloomDebug = false;
+
 // Extracted functionality for normal recursive raytracing (used for computing the color of perturbed samples)
 glm::vec3 perturbedSampleColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
 {
@@ -263,6 +265,38 @@ glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, c
     return color;
 }
 
+glm::vec3 boxFilter(std::vector<std::vector<glm::vec3>>& pixelMatrix, int x, int y, int sizeProvided)
+{
+    int filterSize = std::max(1, sizeProvided);
+    glm::vec3 result = glm::vec3(0.0f);
+
+    for (int i = -filterSize; i < (filterSize + 1); i++) {
+        for (int j = -filterSize; j < (filterSize + 1); j++) {
+            result += pixelMatrix[x + i][y + j];
+        }
+    }
+
+    int denominator = (2 * filterSize + 1) * (2 * filterSize + 1);
+    return (result / static_cast<float>(denominator));
+}
+
+void bloomFilter(glm::ivec2& resolution, std::vector<std::vector<glm::vec3>>& pixelMatrix, float threshold) {
+    for (int y = 0; y < resolution.y; y++) {
+        for (int x = 0; x < resolution.x; x++) {
+
+            glm::vec3 originalColor = pixelMatrix[x][y];
+            float valueToCheck = glm::dot(originalColor, glm::vec3(0.2126f, 0.7152f, 0.0722f));
+
+            if (valueToCheck > threshold) {
+                continue;
+            } else {
+                pixelMatrix[x][y] = glm::vec3(0.0f);
+            }
+
+        }
+    }
+}
+
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features)
 {
     glm::ivec2 windowResolution = screen.resolution();
@@ -285,6 +319,40 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
                 };
                 const Ray cameraRay = camera.generateRay(normalizedPixelPos);
                 screen.setPixel(x, y, getFinalColor(scene, bvh, cameraRay, features));
+            }
+        }
+    }
+
+    if (features.extra.enableBloomEffect) {
+        float threshold = 0.9f;
+        int filterSize = 15;
+        float intensity = 5.0f;
+
+        std::vector<glm::vec3> originalColors = screen.pixels();
+
+        std::vector<std::vector<glm::vec3>> pixelMatrix(windowResolution.x);
+        for (int i = 0; i < windowResolution.x; i++) {
+            std::vector<glm::vec3> row(windowResolution.y);
+            pixelMatrix.push_back(row);
+        }
+
+        for (int y = 0; y < windowResolution.y; y++) {
+            for (int x = 0; x != windowResolution.x; x++) {
+                pixelMatrix[x].push_back(originalColors[screen.indexAt(x, y)]);
+            }
+        }
+
+        bloomFilter(windowResolution, pixelMatrix, threshold);
+
+        for (int y = filterSize; y < windowResolution.y - filterSize; y++) {
+            for (int x = filterSize; x < windowResolution.x - filterSize; x++) {
+
+                if (bloomDebug) {
+                    screen.setPixel(x, y, intensity * boxFilter(pixelMatrix, x, y, filterSize));
+                } else {
+                    screen.setPixel(x, y, originalColors[screen.indexAt(x, y)] + intensity * boxFilter(pixelMatrix, x, y, filterSize));
+                }
+
             }
         }
     }

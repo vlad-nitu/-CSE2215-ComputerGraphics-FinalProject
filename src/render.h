@@ -31,6 +31,8 @@ extern int DOFsamples;
 
 extern int numPerturbedSamples;
 
+extern bool bloomDebug;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
 

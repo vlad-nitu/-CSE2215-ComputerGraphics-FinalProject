@@ -296,7 +296,7 @@ int main(int argc, char** argv)
                         ImGui::Checkbox("Draw child boxes for SAH+Binning", &drawSAH_Debug); 
                     }
                     if (ImGui::CollapsingHeader("Bloom") && config.features.extra.enableBloomEffect) {
-                        // Insert debug config
+                        ImGui::Checkbox("Display bloom filter only", &bloomDebug);
                     }
                     if (ImGui::CollapsingHeader("Bilinear interpolation") && config.features.extra.enableBilinearTextureFiltering) {
                         // Insert debug config
