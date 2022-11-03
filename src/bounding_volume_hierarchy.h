@@ -96,7 +96,7 @@ private:
     bool testPrimitives(const Node& node, Ray& ray, HitInfo& hitInfo, const Features& features, int& bestPrimitiveIndex) const;
 
     // Splits each node and performs all necessary computations for SAH+Binning step for `node`, then recurses on node.left and node.right
-    void subdivideNodeSah(Node& node, const std::vector<AxisAlignedBox>& AABBs, const std::vector<glm::vec3>& centroids, int depth);  
+    void subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth);
     
     // Computes the centroid of an AABB as `lower + upper / 2`
     glm::vec3 computeAABB_centroid(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2);

@@ -6,6 +6,8 @@
 #include "bounding_volume_hierarchy.h"
 #include "extra/supersampling.h"
 #include "extra/environment_map.h"
+#include "texture.h" 
+
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -122,7 +124,15 @@ int main(int argc, char** argv)
                     optDebugRay.reset();
                     scene = loadScenePrebuilt(sceneType, config.dataPath);
                     selectedLightIdx = scene.lights.empty() ? -1 : 0;
+
+                    using clock = std::chrono::high_resolution_clock;
+                    const auto start = clock::now();
+
                     bvh = BvhInterface(&scene, config.features);
+
+                    const auto end = clock::now();
+                    std::cout << "Time to build BVH: " << std::chrono::duration<float, std::milli>(end - start).count() << " milliseconds" << std::endl;
+
                     if (optDebugRay) {
                         HitInfo dummy {};
                         bvh.intersect(*optDebugRay, dummy, config.features);
@@ -167,7 +177,9 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Bloom effect", &config.features.extra.enableBloomEffect);
                 if (config.features.extra.enableBloomEffect) {
-                    // Insert config
+                    ImGui::SliderFloat("Threshold for bloom", &threshold, 0.01f, 1.0f);
+                    ImGui::SliderInt("Size of box filter", &filterSize, 1, 100);
+                    ImGui::SliderFloat("Scaling factor (intensity)", &scalingFactor, 0.01f, 25.0f);
                 }
                 ImGui::Checkbox("Texture filtering(bilinear interpolation)", &config.features.extra.enableBilinearTextureFiltering);
                 if (config.features.extra.enableBilinearTextureFiltering) {
@@ -183,7 +195,8 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
                 if (config.features.extra.enableGlossyReflection) {
-                    // Insert config
+                    ImGui::SliderFloat("Degree of blur", &degreeOfBlur, 0.01f, 1.0f);
+                    ImGui::SliderInt("Number of perturbed reflection samples", &numPerturbedSamples, 10, 300);
                 }
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
                 if (config.features.extra.enableTransparency) {
@@ -192,9 +205,9 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
-                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 1, 100);
+                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 1, 300);
                     ImGui::SliderFloat("Focal length", &focalLength, 1.0f, 10.0f);
-                    ImGui::SliderFloat("Aperture size", &aperture, 0.005f, 0.2f);
+                    ImGui::SliderFloat("Aperture radius", &aperture, 0.005f, 0.2f);
                 }
             }
             ImGui::Separator();
@@ -249,6 +262,9 @@ int main(int argc, char** argv)
 
                     if (ImGui::CollapsingHeader("Hard (and soft) shadows") && (config.features.enableHardShadow || config.features.enableSoftShadow)) {
                         ImGui::Checkbox("Draw shadow ray(s)", &drawShadowRayDebug);
+                        if (config.features.enableSoftShadow) {
+                            ImGui::Checkbox("Use constant seed", &useConstantSeed);
+                        }
                     }
 
                     if (ImGui::CollapsingHeader("BVH") && config.features.enableAccelStructure) {
@@ -295,20 +311,23 @@ int main(int argc, char** argv)
                         ImGui::Checkbox("Draw child boxes for SAH+Binning", &drawSAH_Debug); 
                     }
                     if (ImGui::CollapsingHeader("Bloom") && config.features.extra.enableBloomEffect) {
-                        // Insert debug config
+                        ImGui::Text("Bloom filter debug is only visible in raytracing mode");
+                        ImGui::Checkbox("Display bloom filter only", &bloomDebug);
                     }
                     if (ImGui::CollapsingHeader("Bilinear interpolation") && config.features.extra.enableBilinearTextureFiltering) {
                         // Insert debug config
                     }
                     if (ImGui::CollapsingHeader("Mipmapping") && config.features.extra.enableMipmapTextureFiltering) {
-                        // Insert debug config
+                        ImGui::Text("MipMap Filtering");
+                        ImGui::Checkbox("Draw MipMap closest two levels", &drawMipMapDebug);
                     }
                     if (ImGui::CollapsingHeader("Supersampling") && config.features.extra.enableMultipleRaysPerPixel) {
                         ImGui::Text("When debug is enabled the only the top half of the screen will be affected");
                         ImGui::Checkbox("Enable supersmapling debug", &debugSupersampling);
                     }
                     if (ImGui::CollapsingHeader("Glossy reflection") && config.features.extra.enableGlossyReflection) {
-                        // Insert debug config
+                        ImGui::Text("Glossy reflection debug is available via the one for Recursive ray-tracer");
+                        ImGui::Checkbox("Use constant seed", &glossyConstantSeed);
                     }
                     if (ImGui::CollapsingHeader("Transparency") && config.features.extra.enableTransparency) {
                         // Insert debug config
@@ -318,9 +337,10 @@ int main(int argc, char** argv)
                     }
                         
                 }
-            } else {
-            
+
             }
+            else 
+                drawMipMapDebug = false; 
 
             ImGui::Spacing();
             ImGui::Separator();
