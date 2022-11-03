@@ -5,7 +5,7 @@
 #include <numbers>
 #include <draw.h>
 
-Image environment = Image(".\\..\\..\\..\\data\\environment.png");
+std::shared_ptr<Image> environment = std::make_shared<Image>(".\\..\\..\\..\\data\\environment.png");
 
 bool drawEdgeRays = false;
 
@@ -27,18 +27,18 @@ std::vector<glm::vec4> debugRaysPositions = {
     glm::vec4 {2, 6, 4, 0},
     glm::vec4 {1, 5, 7, 3},
 };
-std::vector<Image> cubeMap = {
+std::vector<std::shared_ptr<Image>> cubeMap = {
     // Positive and negative x
-    Image(".\\..\\..\\..\\data\\right.png"),
-    Image(".\\..\\..\\..\\data\\left.png"),
+    std::make_shared<Image>(".\\..\\..\\..\\data\\right.png"),
+    std::make_shared<Image>(".\\..\\..\\..\\data\\left.png"),
 
     // Positive and negative y
-    Image(".\\..\\..\\..\\data\\top.png"),
-    Image(".\\..\\..\\..\\data\\bottom.png"),
+    std::make_shared<Image>(".\\..\\..\\..\\data\\top.png"),
+    std::make_shared<Image>(".\\..\\..\\..\\data\\bottom.png"),
 
     // Positive and negative z
-    Image(".\\..\\..\\..\\data\\front.png"),
-    Image(".\\..\\..\\..\\data\\back.png"),
+    std::make_shared<Image>(".\\..\\..\\..\\data\\front.png"),
+    std::make_shared<Image>(".\\..\\..\\..\\data\\back.png"),
 };
 
 glm::vec3 getEnvironmentColor(const glm::vec3& lightDirection, const Features& features)
@@ -50,7 +50,7 @@ glm::vec3 getEnvironmentColor(const glm::vec3& lightDirection, const Features& f
 
     glm::vec2 texCoord = glm::vec2 { u, v };
 
-    return acquireTexel(environment, texCoord, features);
+    return acquireTexel(*environment, texCoord, features);
 }
 
 int getImageAndCoord(const glm::vec3& lightDirection, float& u, float& v)
@@ -135,5 +135,5 @@ glm::vec3 getCubeMapColor(const glm::vec3& lightDirection, const Features& featu
         drawRay({ glm::vec3 { 0 }, lightDirection, 1.0f }, glm::vec3 { 1, 1, 0 });
     }
 
-    return acquireTexel(cubeMap[index], glm::vec2 { u, v }, features);
+    return acquireTexel(*cubeMap[index], glm::vec2 { u, v }, features);
 }
