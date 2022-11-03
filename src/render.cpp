@@ -160,10 +160,8 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
                         std::default_random_engine engine(seed);
                         std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
 
-                        // Compute degree of blur -> currently, the inverse of the material shininess
-                        // -> the value is 0.25 (as the shininess of the parallelepiped mirror is 4)
-                        // Question -> should this be a slider instead?
-                        // -> a range of 0.1 to 0.9 produces good images (of increasing blur)
+                        // Compute degree of blur -> determined via the corresponding slider
+                        // -> the default value is set to 0.25 (= 1 / hitInfo.material.shininess)
 
                         // Aggregation vector (later used for averaging the colors from all perturbed samples)
                         glm::vec3 aggregatedColors { 0, 0, 0 };
