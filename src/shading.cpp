@@ -61,9 +61,10 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
     if (features.extra.enableMipmapTextureFiltering && hitInfo.material.kdTexture){
-            int level = ray.t / 2; 
+
             Image& img = *hitInfo.material.kdTexture;
-            
+            int level = log2(ray.t);
+
             mipmap_max_depth = std::log2(img.height);
 
             if (map.find(img) == map.end())
@@ -72,15 +73,23 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
             if (level > mipmap_max_depth)
                 level = mipmap_max_depth;
 
+            if (level == mipmap_max_depth)
+                level --; // We are going to linearly interpolate based on subsampled textures on (level) and (level + 1), so go 1 level back in order to avoid null textures
+
+            float alpha = (ray.t - pow(2, level)) / (pow(2, level + 1) - pow(2, level));
 
             if (features.enableTextureMapping && hitInfo.material.kdTexture)
             {
                 glm::vec3 kd;
                 
                 if (features.extra.enableBilinearTextureFiltering)
-                    kd = bilinearInterpolation(map[img][level], hitInfo.texCoord, features, level, ray);
+                {
+                    kd = (1 - alpha) * bilinearInterpolation(map[img][level], hitInfo.texCoord, features, level, ray) + alpha * bilinearInterpolation(map[img][level + 1], hitInfo.texCoord, features, level, ray) ;
+                }
                 else
-                    kd = acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray);
+                {
+                    kd = (1 - alpha) * acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray) + alpha * acquireTexel(map[img][level + 1], hitInfo.texCoord, features, level, ray) ;
+                }
 
                 return lightColor * kd * dotProduct;
             }
@@ -142,10 +151,11 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
         if (features.enableTextureMapping && hitInfo.material.kdTexture) {
 
              if (features.extra.enableMipmapTextureFiltering) {
-            int level = ray.t / 2; 
-            Image& img = *hitInfo.material.kdTexture;
-            
-            mipmap_max_depth = std::log2(img.height);
+
+             Image& img = *hitInfo.material.kdTexture;
+             int level = log2(ray.t);
+
+             mipmap_max_depth = std::log2(img.height);
 
             if (map.find(img) == map.end())
                 map[img] = createImages(img);
@@ -153,10 +163,15 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
             if (level > mipmap_max_depth)
                 level = mipmap_max_depth;
 
+            if (level == mipmap_max_depth)
+                level --; // We are going to linearly interpolate based on subsampled textures on (level) and (level + 1), so go 1 level back in order to avoid null textures
+
+            float alpha = (ray.t - pow(2, level)) / (pow(2, level + 1) - pow(2, level));
+
             if (features.extra.enableBilinearTextureFiltering)
-                return bilinearInterpolation(map[img][level], hitInfo.texCoord, features, level, ray);
+                return (1 - alpha) * bilinearInterpolation(map[img][level], hitInfo.texCoord, features, level, ray) + alpha * bilinearInterpolation(map[img][level + 1], hitInfo.texCoord, features, level, ray) ;
             else
-                return acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray);
+                return (1 - alpha) * acquireTexel(map[img][level], hitInfo.texCoord, features, level, ray) + alpha * acquireTexel(map[img][level + 1], hitInfo.texCoord, features, level, ray) ;
              }
 
             if (features.extra.enableBilinearTextureFiltering)
