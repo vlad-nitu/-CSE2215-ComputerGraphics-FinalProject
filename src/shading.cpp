@@ -73,10 +73,15 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
             if (level > mipmap_max_depth)
                 level = mipmap_max_depth;
 
+            float alpha;
             if (level == mipmap_max_depth)
-                level --; // We are going to linearly interpolate based on subsampled textures on (level) and (level + 1), so go 1 level back in order to avoid null textures
-
-            float alpha = (ray.t - pow(2, level)) / (pow(2, level + 1) - pow(2, level));
+            {
+                // only use the last mipmap level, the one that contains 1x1 pixels
+                level --;
+                alpha = 1; // only use the last mipmap level, the one that contains 1x1 pixels
+            }
+            else
+                alpha = (ray.t - pow(2, level)) / (pow(2, level + 1) - pow(2, level));
 
             if (features.enableTextureMapping && hitInfo.material.kdTexture)
             {
@@ -160,13 +165,15 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
             if (map.find(img) == map.end())
                 map[img] = createImages(img);
 
-            if (level > mipmap_max_depth)
-                level = mipmap_max_depth;
-
-            if (level == mipmap_max_depth)
-                level --; // We are going to linearly interpolate based on subsampled textures on (level) and (level + 1), so go 1 level back in order to avoid null textures
-
-            float alpha = (ray.t - pow(2, level)) / (pow(2, level + 1) - pow(2, level));
+             float alpha;
+             if (level == mipmap_max_depth)
+             {
+                 // only use the last mipmap level, the one that contains 1x1 pixels
+                 level --;
+                 alpha = 1;
+             }
+             else
+                 alpha = (ray.t - pow(2, level)) / (pow(2, level + 1) - pow(2, level));
 
             if (features.extra.enableBilinearTextureFiltering)
                 return (1 - alpha) * bilinearInterpolation(map[img][level], hitInfo.texCoord, features, level, ray) + alpha * bilinearInterpolation(map[img][level + 1], hitInfo.texCoord, features, level, ray) ;
