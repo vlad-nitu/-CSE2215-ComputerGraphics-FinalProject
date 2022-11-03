@@ -274,7 +274,12 @@ glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, c
     glm::vec3 focalPoint = ray.origin + focalLength * ray.direction;
 
     for (int i = 0; i < DOFsamples; i++) {
-        glm::vec3 randomLense = ray.origin + glm::vec3 { getRand(-aperture, aperture), getRand(-aperture, aperture), getRand(-aperture, aperture) };
+        glm::vec3 randomPos = glm::vec3 { getRand(-aperture, aperture), getRand(-aperture, aperture), getRand(-aperture, aperture) };
+
+        glm::vec3 lense = randomPos - (glm::dot(randomPos, ray.direction) / glm::dot(ray.direction, ray.direction)) * ray.direction;
+        lense = glm::normalize(lense);
+
+        glm::vec3 randomLense = ray.origin + lense * getRand(-aperture, aperture);
 
         Ray newRay = { randomLense, glm::normalize(focalPoint - randomLense), std::numeric_limits<float>::max() };
 
