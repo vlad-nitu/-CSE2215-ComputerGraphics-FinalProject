@@ -131,6 +131,8 @@ glm::vec3 getCubeMapColor(const glm::vec3& lightDirection, const Features& featu
         drawRay({ glm::vec3 { 0 }, debugRays[debugRaysPositions[index].y] }, glm::vec3 { 0, 1, 0.76 });
         drawRay({ glm::vec3 { 0 }, debugRays[debugRaysPositions[index].z] }, glm::vec3 { 0, 1, 0.76 });
         drawRay({ glm::vec3 { 0 }, debugRays[debugRaysPositions[index].w] }, glm::vec3 { 0, 1, 0.76 });
+
+        drawRay({ glm::vec3 { 0 }, lightDirection, 1.0f }, glm::vec3 { 1, 1, 0 });
     }
 
     return acquireTexel(cubeMap[index], glm::vec2 { u, v }, features);
