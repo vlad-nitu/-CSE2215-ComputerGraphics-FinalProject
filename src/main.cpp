@@ -165,7 +165,9 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Bloom effect", &config.features.extra.enableBloomEffect);
                 if (config.features.extra.enableBloomEffect) {
-                    // Insert config
+                    ImGui::SliderFloat("Threshold for bloom", &threshold, 0.01f, 1.0f);
+                    ImGui::SliderInt("Size of box filter", &filterSize, 1, 100);
+                    ImGui::SliderFloat("Scaling factor (intensity)", &scalingFactor, 0.01f, 25.0f);
                 }
                 ImGui::Checkbox("Texture filtering(bilinear interpolation)", &config.features.extra.enableBilinearTextureFiltering);
                 if (config.features.extra.enableBilinearTextureFiltering) {
@@ -181,6 +183,7 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Glossy reflections", &config.features.extra.enableGlossyReflection);
                 if (config.features.extra.enableGlossyReflection) {
+                    ImGui::SliderFloat("Degree of blur", &degreeOfBlur, 0.01f, 1.0f);
                     ImGui::SliderInt("Number of perturbed reflection samples", &numPerturbedSamples, 10, 300);
                 }
                 ImGui::Checkbox("Transparency", &config.features.extra.enableTransparency);
@@ -296,6 +299,7 @@ int main(int argc, char** argv)
                         ImGui::Checkbox("Draw child boxes for SAH+Binning", &drawSAH_Debug); 
                     }
                     if (ImGui::CollapsingHeader("Bloom") && config.features.extra.enableBloomEffect) {
+                        ImGui::Text("Bloom filter debug is only visible in raytracing mode");
                         ImGui::Checkbox("Display bloom filter only", &bloomDebug);
                     }
                     if (ImGui::CollapsingHeader("Bilinear interpolation") && config.features.extra.enableBilinearTextureFiltering) {
@@ -308,7 +312,8 @@ int main(int argc, char** argv)
                         ImGui::Text("Supersampling debug is available in raytracing mode");
                     }
                     if (ImGui::CollapsingHeader("Glossy reflection") && config.features.extra.enableGlossyReflection) {
-                        // Insert debug config
+                        ImGui::Text("Glossy reflection debug is available via the one for Recursive ray-tracer");
+                        ImGui::Checkbox("Use constant seed", &glossyConstantSeed);
                     }
                     if (ImGui::CollapsingHeader("Transparency") && config.features.extra.enableTransparency) {
                         // Insert debug config

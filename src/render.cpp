@@ -33,9 +33,17 @@ float focalLength = 4.0f;
 float aperture = 0.05f;
 int DOFsamples = 1;
 
+std::random_device rdGlossyConstant;
+unsigned seedGlossyConstant = rdGlossyConstant();
+
+bool glossyConstantSeed = false;
+float degreeOfBlur = 0.25f;
 int numPerturbedSamples = 50;
 
 bool bloomDebug = false;
+float threshold = 0.9f;
+int filterSize = 40;
+float scalingFactor = 1.0f;
 
 // Extracted functionality for normal recursive raytracing (used for computing the color of perturbed samples)
 glm::vec3 perturbedSampleColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth)
@@ -139,15 +147,23 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
                         glm::vec3 V = glm::cross(reflectionDirection, U);
 
                         // Used for generating uniform random numbers in the interval [0; 1)
-                        std::random_device rd;
-                        std::default_random_engine engine(rd());
+                        std::random_device rdDynamic;
+                        unsigned seedDynamic = rdDynamic();
+
+                        unsigned seed = 0;
+                        if (glossyConstantSeed) {
+                            seed = seedGlossyConstant;
+                        } else {
+                            seed = seedDynamic;
+                        }
+
+                        std::default_random_engine engine(seed);
                         std::uniform_real_distribution<float> uniform(0.0f, 1.0f);
 
                         // Compute degree of blur -> currently, the inverse of the material shininess
                         // -> the value is 0.25 (as the shininess of the parallelepiped mirror is 4)
                         // Question -> should this be a slider instead?
                         // -> a range of 0.1 to 0.9 produces good images (of increasing blur)
-                        float degreeOfBlur = 1 / hitInfo.material.shininess;
 
                         // Aggregation vector (later used for averaging the colors from all perturbed samples)
                         glm::vec3 aggregatedColors { 0, 0, 0 };
@@ -265,32 +281,32 @@ glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, c
     return color;
 }
 
-glm::vec3 boxFilter(std::vector<std::vector<glm::vec3>>& pixelMatrix, int x, int y, int sizeProvided)
+glm::vec3 boxFilter(std::vector<std::vector<glm::vec3>>& pixelGrid, int x, int y, int givenFilterSize)
 {
-    int filterSize = std::max(1, sizeProvided);
     glm::vec3 result = glm::vec3(0.0f);
 
-    for (int i = -filterSize; i < (filterSize + 1); i++) {
-        for (int j = -filterSize; j < (filterSize + 1); j++) {
-            result += pixelMatrix[x + i][y + j];
+    for (int i = -givenFilterSize; i < (givenFilterSize + 1); i++) {
+        for (int j = -givenFilterSize; j < (givenFilterSize + 1); j++) {
+            result += pixelGrid[x + i][y + j];
         }
     }
 
-    int denominator = (2 * filterSize + 1) * (2 * filterSize + 1);
+    int denominator = (2 * givenFilterSize + 1) * (2 * givenFilterSize + 1);
     return (result / static_cast<float>(denominator));
 }
 
-void bloomFilter(glm::ivec2& resolution, std::vector<std::vector<glm::vec3>>& pixelMatrix, float threshold) {
+void bloomFilter(glm::ivec2& resolution, std::vector<std::vector<glm::vec3>>& pixelGrid, float givenThreshold, int givenFilterSize)
+{
     for (int y = 0; y < resolution.y; y++) {
         for (int x = 0; x < resolution.x; x++) {
 
-            glm::vec3 originalColor = pixelMatrix[x][y];
+            glm::vec3 originalColor = pixelGrid[x + givenFilterSize][y + givenFilterSize];
             float valueToCheck = glm::dot(originalColor, glm::vec3(0.2126f, 0.7152f, 0.0722f));
 
-            if (valueToCheck > threshold) {
+            if (valueToCheck > givenThreshold) {
                 continue;
             } else {
-                pixelMatrix[x][y] = glm::vec3(0.0f);
+                pixelGrid[x + givenFilterSize][y + givenFilterSize] = glm::vec3(0.0f);
             }
 
         }
@@ -324,33 +340,29 @@ void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInte
     }
 
     if (features.extra.enableBloomEffect) {
-        float threshold = 0.9f;
-        int filterSize = 15;
-        float intensity = 5.0f;
-
         std::vector<glm::vec3> originalColors = screen.pixels();
 
-        std::vector<std::vector<glm::vec3>> pixelMatrix(windowResolution.x);
-        for (int i = 0; i < windowResolution.x; i++) {
-            std::vector<glm::vec3> row(windowResolution.y);
-            pixelMatrix.push_back(row);
+        std::vector<std::vector<glm::vec3>> extendedPixelGrid(size_t(windowResolution.x + 2 * filterSize));
+        for (int i = 0; i < windowResolution.x + 2 * filterSize; i++) {
+            std::vector<glm::vec3> rowWithBorder(size_t(windowResolution.y + 2 * filterSize), glm::vec3(0.0f));
+            extendedPixelGrid[i] = rowWithBorder;
         }
 
         for (int y = 0; y < windowResolution.y; y++) {
             for (int x = 0; x != windowResolution.x; x++) {
-                pixelMatrix[x].push_back(originalColors[screen.indexAt(x, y)]);
+                extendedPixelGrid[x + filterSize][y + filterSize] = originalColors[screen.indexAt(x, y)];
             }
         }
 
-        bloomFilter(windowResolution, pixelMatrix, threshold);
+        bloomFilter(windowResolution, extendedPixelGrid, threshold, filterSize);
 
-        for (int y = filterSize; y < windowResolution.y - filterSize; y++) {
-            for (int x = filterSize; x < windowResolution.x - filterSize; x++) {
+        for (int y = filterSize; y < windowResolution.y + filterSize; y++) {
+            for (int x = filterSize; x < windowResolution.x + filterSize; x++) {
 
                 if (bloomDebug) {
-                    screen.setPixel(x, y, intensity * boxFilter(pixelMatrix, x, y, filterSize));
+                    screen.setPixel(x - filterSize, y - filterSize, scalingFactor * boxFilter(extendedPixelGrid, x, y, filterSize));
                 } else {
-                    screen.setPixel(x, y, originalColors[screen.indexAt(x, y)] + intensity * boxFilter(pixelMatrix, x, y, filterSize));
+                    screen.setPixel(x - filterSize, y - filterSize, originalColors[screen.indexAt(x - filterSize, y - filterSize)] + scalingFactor * boxFilter(extendedPixelGrid, x, y, filterSize));
                 }
 
             }
