@@ -201,9 +201,9 @@ int main(int argc, char** argv)
                 }
                 ImGui::Checkbox("Depth of field", &config.features.extra.enableDepthOfField);
                 if (config.features.extra.enableDepthOfField) {
-                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 1, 100);
+                    ImGui::SliderInt("Samples per pixel", &DOFsamples, 1, 300);
                     ImGui::SliderFloat("Focal length", &focalLength, 1.0f, 10.0f);
-                    ImGui::SliderFloat("Aperture size", &aperture, 0.005f, 0.2f);
+                    ImGui::SliderFloat("Aperture radius", &aperture, 0.005f, 0.2f);
                 }
             }
             ImGui::Separator();
