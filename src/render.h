@@ -29,6 +29,15 @@ extern float focalLength;
 extern float aperture;
 extern int DOFsamples;
 
+extern bool glossyConstantSeed;
+extern float degreeOfBlur;
+extern int numPerturbedSamples;
+
+extern bool bloomDebug;
+extern float threshold;
+extern int filterSize;
+extern float scalingFactor;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
 

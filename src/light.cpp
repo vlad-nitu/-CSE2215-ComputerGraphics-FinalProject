@@ -94,21 +94,33 @@ float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& deb
         glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
         float tLight = glm::distance(samplePos, currentPoint);
 
+        // Compute ray pointing towards the given sample position on the light source
         Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight - 0.0001f };
+
         if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
+
             if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
+
+                // If the ray intersects a shape behind the light source, the sample position is visible regardless
                 if (drawShadowRayDebug)
                     drawRay(pointTowardsLight, debugColor);
                 return 1.0f;
+
             } else {
+
+                // If the ray intersects a shape on its way to (i.e. in front of) the light source, the sample position is not visible
                 if (drawShadowRayDebug)
                     drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
                 return 0.0f;
+
             }
         } else {
+
+            // If the ray does not intersect any shape, the sample position is visible
             if (drawShadowRayDebug)
                 drawRay(pointTowardsLight, debugColor);
             return 1.0f;
+
         }
     }
 }
@@ -178,6 +190,7 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
                     result += lightContribution * computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
                 } else
+                    // If hard shadows are disabled, treat every position as if it is visible (no shadows produced)
                     result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
 
             } else if (std::holds_alternative<SegmentLight>(light)) {
@@ -198,14 +211,13 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
                         color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     } else {
+                        // If soft shadows are disabled, treat every position as if it is visible (no shadows produced)
                         color += computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
                 }
 
                 // Averaging the shading result
                 result += (color / static_cast<float>(SAMPLE_COUNT));
-
-                // If soft shadows are disabled and a point light source is absent, the scene will appear black!
 
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
@@ -226,6 +238,7 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
                         color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     } else {
+                        // If soft shadows are disabled, treat every position as if it is visible (no shadows produced)
                         color += computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
                 }
@@ -235,7 +248,6 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
             }
         }
 
-        // return (result / static_cast<float>(scene.lights.size()));
         return result;
 
     } else {
