@@ -4,7 +4,10 @@
 #include "render.h"
 #include "screen.h"
 #include "bounding_volume_hierarchy.h"
+#include "extra/supersampling.h"
+#include "extra/environment_map.h"
 #include "texture.h" 
+
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -165,7 +168,8 @@ int main(int argc, char** argv)
             if (ImGui::CollapsingHeader("Extra Features")) {
                 ImGui::Checkbox("Environment mapping", &config.features.extra.enableEnvironmentMapping);
                 if (config.features.extra.enableEnvironmentMapping) {
-                    // Insert config
+                    ImGui::Bullet();
+                    ImGui::Checkbox("Use sphere-mapping instead of cube-mapping", &useSphereEnvironment);
                 }
                 ImGui::Checkbox("BVH SAH binning", &config.features.extra.enableBvhSahBinning);
                 if (config.features.extra.enableBvhSahBinning) {
@@ -301,7 +305,7 @@ int main(int argc, char** argv)
                 if (ImGui::CollapsingHeader("Extra Features debug")) {
 
                     if (ImGui::CollapsingHeader("Environment maps") && config.features.extra.enableEnvironmentMapping) {
-                        // Insert debug config
+                        ImGui::Checkbox("Draw cube-mapping edges", &drawEdgeRays);
                     }
                     if (ImGui::CollapsingHeader("SAH + Binning") && config.features.extra.enableBvhSahBinning) {
                         ImGui::Checkbox("Draw child boxes for SAH+Binning", &drawSAH_Debug); 
@@ -318,7 +322,8 @@ int main(int argc, char** argv)
                         ImGui::Checkbox("Draw MipMap closest two levels", &drawMipMapDebug);
                     }
                     if (ImGui::CollapsingHeader("Supersampling") && config.features.extra.enableMultipleRaysPerPixel) {
-                        ImGui::Text("Supersampling debug is available in raytracing mode");
+                        ImGui::Text("When debug is enabled the only the top half of the screen will be affected");
+                        ImGui::Checkbox("Enable supersmapling debug", &debugSupersampling);
                     }
                     if (ImGui::CollapsingHeader("Glossy reflection") && config.features.extra.enableGlossyReflection) {
                         ImGui::Text("Glossy reflection debug is available via the one for Recursive ray-tracer");

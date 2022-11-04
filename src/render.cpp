@@ -10,7 +10,8 @@
 // Import in order to perform second visual debug for BVH traversal
 #include <bounding_volume_hierarchy.h> // Ask TAs if allowed
 
-#include <supersampling.h>
+#include <extra/environment_map.h>
+#include <extra/supersampling.h>
 
 #ifdef NDEBUG
 #include <omp.h>
@@ -25,6 +26,8 @@ int max_ray_depth = 1;
 // The level in the recursion tree of which to show the intersected but unvisited nodes of the BVH
 bool showUnvisited = false;
 int traversalDebugDepth = 1;
+
+bool useSphereEnvironment = false;
 
 int samplesPerPixel = 2; // Sample size per pixel
 
@@ -234,19 +237,43 @@ glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, co
         // Set the color of the pixel.
         return Lo;
     } else {
-        // Draw a red debug ray if the ray missed.
-        drawRay(ray, glm::vec3(1.0f, 0.0f, 0.0f));
-        // Set the color of the pixel to black if the ray misses.
 
-        // Check if the rays come from the camera
-        if (rayDepth == 1) {
-            // Implement DOF
-            if (features.extra.enableDepthOfField) {
-                Lo /= DOFsamples; // Average the results without main ray
+        if (features.extra.enableEnvironmentMapping) {
+
+            if (useSphereEnvironment)
+                Lo += getEnvironmentColor(ray.direction, features);
+            else
+                Lo += getCubeMapColor(ray.direction, features);
+
+            if (drawDebugShading)
+                drawRay(ray, Lo);
+            else
+                drawRay(ray, glm::vec3 { 1 });
+
+            if (rayDepth == 1) {
+                // Implement DOF
+                if (features.extra.enableDepthOfField) {
+                    Lo /= DOFsamples; // Average the results without main ray
+                }
             }
-        }
 
-        return Lo;
+            return Lo;
+
+        } else {
+            // Draw a red debug ray if the ray missed.
+            drawRay(ray, glm::vec3(1.0f, 0.0f, 0.0f));
+            // Set the color of the pixel to black if the ray misses.
+
+            // Check if the rays come from the camera
+            if (rayDepth == 1) {
+                // Implement DOF
+                if (features.extra.enableDepthOfField) {
+                    Lo /= DOFsamples; // Average the results without main ray
+                }
+            }
+
+            return Lo;
+        }
     }
 }
 
