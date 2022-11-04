@@ -5,7 +5,7 @@
 #include <numbers>
 #include <draw.h>
 
-std::shared_ptr<Image> environment = std::make_shared<Image>(".\\..\\..\\..\\data\\environment.png");
+std::shared_ptr<Image> environment = std::make_shared<Image>(DATA_DIR "environment.png");
 
 bool drawEdgeRays = false;
 
@@ -29,16 +29,16 @@ std::vector<glm::vec4> debugRaysPositions = {
 };
 std::vector<std::shared_ptr<Image>> cubeMap = {
     // Positive and negative x
-    std::make_shared<Image>(".\\..\\..\\..\\data\\right.png"),
-    std::make_shared<Image>(".\\..\\..\\..\\data\\left.png"),
+    std::make_shared<Image>( DATA_DIR "right.png"),
+    std::make_shared<Image>(DATA_DIR "left.png"),
 
     // Positive and negative y
-    std::make_shared<Image>(".\\..\\..\\..\\data\\top.png"),
-    std::make_shared<Image>(".\\..\\..\\..\\data\\bottom.png"),
+    std::make_shared<Image>(DATA_DIR "top.png"),
+    std::make_shared<Image>(DATA_DIR "bottom.png"),
 
     // Positive and negative z
-    std::make_shared<Image>(".\\..\\..\\..\\data\\front.png"),
-    std::make_shared<Image>(".\\..\\..\\..\\data\\back.png"),
+    std::make_shared<Image>(DATA_DIR "front.png"),
+    std::make_shared<Image>(DATA_DIR "back.png"),
 };
 
 glm::vec3 getEnvironmentColor(const glm::vec3& lightDirection, const Features& features)
