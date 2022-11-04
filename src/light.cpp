@@ -11,11 +11,15 @@ DISABLE_WARNINGS_POP()
 bool drawShadowRayDebug = false;
 bool useConstantSeed = false;
 
+int SAMPLE_COUNT = 100;
+
 // Constant seed used when debugging (for sampling the line-segment and parallelogram light sources)
 // N.B.: Not using a dynamically-computed seed (the random device and the seed are computed only once every run)
 // Otherwise, once the project is run, the shadow rays would be continuously recalculated, and debugging would be difficult.
 std::random_device rdConstant;
 unsigned seedConstant = rdConstant();
+
+bool transparencyShadowRays = false;
 
 // samples a segment light source
 // you should fill in the vectors position and color with the sampled position and color
@@ -56,25 +60,68 @@ void sampleParallelogramLight(const ParallelogramLight& parallelogramLight, glm:
 // Reference used: Fundamentals of Computer Graphics (Fourth Edition), Chapter 4, Section 4.7, pp. 86-87
 float testVisibilityLightSample(const glm::vec3& samplePos, const glm::vec3& debugColor, const BvhInterface& bvh, const Features& features, Ray ray, HitInfo hitInfo)
 {
-    glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
-    glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
-    float tLight = glm::distance(samplePos, currentPoint);
+    // Check if we want shadow rays to work for transparent objects or not
+    if (features.extra.enableTransparency && transparencyShadowRays) {
+        glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
+        glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
+        float tLight = glm::distance(samplePos, currentPoint);
 
-    Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight - 0.0001f };
-    if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
-        if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
+        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight - 0.0001f };
+
+        if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
+
+            if (hitInfo.material.transparency < 1.0f) {
+                float incomigLightColor = (1.0f - hitInfo.material.transparency) * testVisibilityLightSample(samplePos, debugColor, bvh, features, pointTowardsLight, hitInfo);
+
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, incomigLightColor * debugColor);
+
+                return incomigLightColor;
+            } else {
+
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, glm::vec3 { 1, 0, 0 });
+                return 0.0f;
+            }
+
+        } else {
             if (drawShadowRayDebug)
                 drawRay(pointTowardsLight, debugColor);
             return 1.0f;
-        } else {
-            if (drawShadowRayDebug)
-                drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
-            return 0.0f;
         }
     } else {
-        if (drawShadowRayDebug)
-            drawRay(pointTowardsLight, debugColor);
-        return 1.0f;
+        glm::vec3 currentPoint = ray.origin + ray.t * ray.direction;
+        glm::vec3 directionPointToLight = glm::normalize(samplePos - currentPoint);
+        float tLight = glm::distance(samplePos, currentPoint);
+
+        // Compute ray pointing towards the given sample position on the light source
+        Ray pointTowardsLight { currentPoint + 0.0001f * directionPointToLight, directionPointToLight, tLight - 0.0001f };
+
+        if (bvh.intersect(pointTowardsLight, hitInfo, features)) {
+
+            if (pointTowardsLight.t > tLight || fabs(pointTowardsLight.t - tLight) < 0.0001f) {
+
+                // If the ray intersects a shape behind the light source, the sample position is visible regardless
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, debugColor);
+                return 1.0f;
+
+            } else {
+
+                // If the ray intersects a shape on its way to (i.e. in front of) the light source, the sample position is not visible
+                if (drawShadowRayDebug)
+                    drawRay(pointTowardsLight, glm::vec3(1, 0, 0));
+                return 0.0f;
+
+            }
+        } else {
+
+            // If the ray does not intersect any shape, the sample position is visible
+            if (drawShadowRayDebug)
+                drawRay(pointTowardsLight, debugColor);
+            return 1.0f;
+
+        }
     }
 }
 
@@ -118,10 +165,6 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
         glm::vec3 result = glm::vec3 { 0.0f };
 
-        // Number of samples taken from a given light source (only for line-segment and parallelogram light sources)
-        // N.B.: A larger value reduces the noise in the rendered image yet also makes the rendering process slower!
-        const int SAMPLE_COUNT = 100;
-
         // Dynamically-computed seed used when rendering (for sampling the line-segment and parallelogram light sources)
         std::random_device rdDynamic;
         unsigned seedDynamic = rdDynamic();
@@ -147,61 +190,64 @@ glm::vec3 computeLightContribution(const Scene& scene, const BvhInterface& bvh, 
 
                     result += lightContribution * computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
                 } else
+                    // If hard shadows are disabled, treat every position as if it is visible (no shadows produced)
                     result += computeShading(pointLight.position, pointLight.color, features, ray, hitInfo);
 
             } else if (std::holds_alternative<SegmentLight>(light)) {
                 const SegmentLight segmentLight = std::get<SegmentLight>(light);
 
-                if (features.enableSoftShadow) {
-                    glm::vec3 color = glm::vec3 { 0.0f };
+                glm::vec3 color = glm::vec3 { 0.0f };
 
-                    for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        float alpha = uniform(engine);
+                for (int i = 0; i < SAMPLE_COUNT; i++) {
+                    float alpha = uniform(engine);
 
-                        glm::vec3 samplePosition = glm::vec3 { alpha };
-                        glm::vec3 sampleColor = glm::vec3 { 0.0f };
+                    glm::vec3 samplePosition = glm::vec3 { alpha };
+                    glm::vec3 sampleColor = glm::vec3 { 0.0f };
 
-                        sampleSegmentLight(segmentLight, samplePosition, sampleColor);
+                    sampleSegmentLight(segmentLight, samplePosition, sampleColor);
 
+                    if (features.enableSoftShadow) {
                         // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
                         color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+                    } else {
+                        // If soft shadows are disabled, treat every position as if it is visible (no shadows produced)
+                        color += computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
-
-                    // Averaging the shading result
-                    result += (color / static_cast<float>(SAMPLE_COUNT));
                 }
 
-                // If soft shadows are disabled and a point light source is absent, the scene will appear black!
+                // Averaging the shading result
+                result += (color / static_cast<float>(SAMPLE_COUNT));
 
             } else if (std::holds_alternative<ParallelogramLight>(light)) {
                 const ParallelogramLight parallelogramLight = std::get<ParallelogramLight>(light);
 
-                if (features.enableSoftShadow) {
-                    glm::vec3 color = glm::vec3 { 0.0f };
+                glm::vec3 color = glm::vec3 { 0.0f };
 
-                    for (int i = 0; i < SAMPLE_COUNT; i++) {
-                        float alpha = uniform(engine);
-                        float beta = uniform(engine);
+                for (int i = 0; i < SAMPLE_COUNT; i++) {
+                    float alpha = uniform(engine);
+                    float beta = uniform(engine);
 
-                        glm::vec3 samplePosition = glm::vec3 { alpha };
-                        glm::vec3 sampleColor = glm::vec3 { beta };
+                    glm::vec3 samplePosition = glm::vec3 { alpha };
+                    glm::vec3 sampleColor = glm::vec3 { beta };
 
-                        sampleParallelogramLight(parallelogramLight, samplePosition, sampleColor);
+                    sampleParallelogramLight(parallelogramLight, samplePosition, sampleColor);
 
-                        // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
+                    // Accumulating colors -> black [RGB(0, 0, 0)] in case the sample position is not visible
+                    if (features.enableSoftShadow) {
                         float isVisible = testVisibilityLightSample(samplePosition, sampleColor, bvh, features, ray, hitInfo);
                         color += isVisible * computeShading(samplePosition, sampleColor, features, ray, hitInfo);
+                    } else {
+                        // If soft shadows are disabled, treat every position as if it is visible (no shadows produced)
+                        color += computeShading(samplePosition, sampleColor, features, ray, hitInfo);
                     }
-
-                    // Averaging the shading result
-                    result += (color / static_cast<float>(SAMPLE_COUNT));
                 }
 
-                // If soft shadows are disabled and a point light source is absent, the scene will appear black!
-
+                // Averaging the shading result
+                result += (color / static_cast<float>(SAMPLE_COUNT));
             }
         }
+
         return result;
 
     } else {

@@ -23,8 +23,29 @@ extern int max_ray_depth;
 extern bool showUnvisited;
 extern int traversalDebugDepth;
 
+extern bool useSphereEnvironment;
+
+extern int samplesPerPixel;
+
+extern float focalLength;
+extern float aperture;
+extern int DOFsamples;
+
+extern bool glossyConstantSeed;
+extern float degreeOfBlur;
+extern int numPerturbedSamples;
+
+extern bool bloomDebug;
+extern float threshold;
+extern int filterSize;
+extern float scalingFactor;
+
 // Main rendering function.
 void renderRayTracing(const Scene& scene, const Trackball& camera, const BvhInterface& bvh, Screen& screen, const Features& features);
+
+float getRand(float x = 0.0f, float y = 1.0f - std::numeric_limits<float>::epsilon());
+
+glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, const Features& features, const int rayDepth);
 
 // Get the color of a ray.
 glm::vec3 getFinalColor(const Scene& scene, const BvhInterface& bvh, Ray ray, const Features& features, int rayDepth = 1);

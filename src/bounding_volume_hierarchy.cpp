@@ -13,52 +13,7 @@ bool drawNormalInterpolationDebug = false;
 // Draw the debug for BVH traversal
 bool rayNodeIntersectionDebug = false;
 bool drawUnvisited = false;
-
-/*
-void BoundingVolumeHierarchy::computeAABB(Node& node)
-{
-    glm::vec3 low = glm::vec3 { std::numeric_limits<float>::max() };
-    glm::vec3 high = glm::vec3 { -std::numeric_limits<float>::max() };
-
-    for (int i = 0; i < node.children.size(); i++) {
-        int primitiveIndex = node.children[i];
-
-        // Find the mesh which contains this triangle
-        int mesh = 0;
-        while (m_pScene->meshes[mesh].triangles.size() <= primitiveIndex) {
-            primitiveIndex -= m_pScene->meshes[mesh++].triangles.size();
-        }
-
-        // Check if the primitive is a sphere or a triangle
-        if (m_pScene->meshes.size() <= mesh) { // !!!!!!!!!!!!!!!!! Make sure the equality sign is right
-            Sphere sphere = m_pScene->spheres[primitiveIndex];
-
-            // Computer the maximum and minimum coordinates of the sphere
-            glm::vec3 sphereMin = sphere.center - glm::vec3 { sphere.radius };
-            glm::vec3 sphereMax = sphere.center + glm::vec3 { sphere.radius };
-
-            // Update the max and min values coordinate-wise
-            low = glm::min(sphereMin, low);
-            high = glm::max(sphereMax, high);
-        } else {
-            // Get the triangle from the coresponding mesh
-            glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
-
-            // Get the vertices coordinates of the triangle
-            glm::vec3 v0 = m_pScene->meshes[mesh].vertices[tri[0]].position;
-            glm::vec3 v1 = m_pScene->meshes[mesh].vertices[tri[1]].position;
-            glm::vec3 v2 = m_pScene->meshes[mesh].vertices[tri[2]].position;
-
-            // Update the max and min values coordinate-wise
-            low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
-            high = glm::max(high, glm::max(v0, glm::max(v1, v2)));
-        }
-    }
-
-    node.lower = low;
-    node.upper = high;
-}
-*/
+bool drawSAH_Debug = false;
 
 /// <summary>
 /// Given a primitive's index it will update the minimum and maximum coordinates of an AABBs corners
@@ -107,14 +62,12 @@ void BoundingVolumeHierarchy::updateAABB(int primitiveIndex, glm::vec3& low, glm
 /// <param name="centroids"> The list containing the centroids for all the primitives. </param>
 /// <param name="axis"> The axis on which the node will be split. 0 for x, 1 for y, 2 for z. </param>
 /// <param name="depth"> The depth of the given node. </param>
-void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& centroids, int axis, int depth)
+void BoundingVolumeHierarchy::subdivideNode(Node& node, const std::vector<glm::vec3>& centroids, int axis, int depth)
 {
-    // computeAABB(node);
-
     // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
     m_numLevels = std::max(m_numLevels, depth + 1);
 
-    if (node.children.size() <= 4) {
+    if (node.children.size() <= 5) {
         nodes.push_back(node); // Add the node to the hierarchy
 
         return;
@@ -131,7 +84,7 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& 
         /*
          * Sort the indices based on the centroids by the current axis in order to find the median one.
          */
-        std::sort(node.children.begin(), node.children.end(), [centroids, axis](int a, int b) {
+        std::sort(node.children.begin(), node.children.end(), [&centroids, axis](int a, int b) {
             if (axis == 0)
                 return centroids[a].x < centroids[b].x;
             else if (axis == 1)
@@ -178,6 +131,195 @@ void BoundingVolumeHierarchy::subdivideNode(Node& node, std::vector<glm::vec3>& 
     }
 }
 
+void BoundingVolumeHierarchy::subdivideNodeSah(Node& node, const std::vector<glm::vec3>& centroids, int depth)
+{
+    // Check if we have reached a new bigger depth in the tree (levels = max_depth + 1 since root has depth = 0)
+    m_numLevels = std::max(m_numLevels, depth + 1);
+
+    if (node.children.size() <= MAX_PRIMITIVES_PER_LEAF || depth >= MAX_DEPTH) {
+        nodes.push_back(node); // Add the node to the hierarchy
+        return;
+    }
+
+    // compute AABB of centroids of triangles
+    glm::vec3 low_aabb = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 high_aabb = glm::vec3 { -std::numeric_limits<float>::max() };
+
+    int primitives = node.children.size();
+
+    for (int i = 0; i < primitives; ++i) {
+        updateAABB_SAH(centroids[node.children[i]], low_aabb, high_aabb);
+    }
+
+    float max_val = -std::numeric_limits<float>::max();
+    int axis = -1;
+    float cbmin, cbmax;
+
+    if (high_aabb.x - low_aabb.x > max_val) {
+        max_val = high_aabb.x - low_aabb.x;
+        cbmin = low_aabb.x;
+        cbmax = high_aabb.x;
+        axis = 0;
+    }
+
+    if (high_aabb.y - low_aabb.y > max_val) {
+        max_val = high_aabb.y - low_aabb.y;
+        cbmin = low_aabb.y;
+        cbmax = high_aabb.y;
+        axis = 1;
+    }
+
+    if (high_aabb.z - low_aabb.z > max_val) {
+        max_val = high_aabb.z - low_aabb.z;
+        cbmin = low_aabb.z;
+        cbmax = high_aabb.z;
+        axis = 2;
+    }
+
+    std::vector<SahAABB> bins(N_BINS);
+    float centr;
+
+    // Place every triangle in the corresponding bin
+    for (int i = 0; i < primitives; ++i) {
+        if (axis == 0)
+            centr = centroids[node.children[i]].x;
+        else if (axis == 1)
+            centr = centroids[node.children[i]].y;
+        else
+            centr = centroids[node.children[i]].z;
+
+        int bin_index = (1 - EPSILON) * N_BINS * (centr - cbmin) / (cbmax - cbmin);
+        updateAABB(node.children[i], bins[bin_index].bounds.lower, bins[bin_index].bounds.upper);
+        bins[bin_index].primitiveIndexes.push_back(i);
+    }
+
+    // Store volume and # of primitives for each bin
+    std::pair<float, int> defaulted { 0.0f, 0 };
+    std::vector<std::pair<float, int>> costs(N_BINS, defaulted);
+
+    // Precompute left->right then use precomputation when traversing right->left in order to obtain linear time complexity
+    costs[0] = (std::make_pair(volume(bins[0].bounds), bins[0].primitiveIndexes.size()));
+    AxisAlignedBox updated_box = bins[0].bounds;
+    int added_triangles = bins[0].primitiveIndexes.size();
+
+    for (int idx = 1; idx < N_BINS; ++idx) { // left->right
+
+        if (!bins[idx].primitiveIndexes.empty()) // compute cost
+        {
+            unionBoxes(updated_box, bins[idx].bounds);
+            added_triangles += bins[idx].primitiveIndexes.size();
+
+            std::pair<float, int> curr_cost = { volume(updated_box), added_triangles };
+            costs[idx] = curr_cost;
+        }
+    }
+
+    int split_idx = -1;
+    float min_val = std::numeric_limits<float>::max();
+
+    updated_box = bins[N_BINS - 1].bounds;
+    added_triangles = bins[N_BINS - 1].primitiveIndexes.size();
+
+    for (int idx = N_BINS - 2; idx >= 0; --idx) {
+
+        if (!bins[idx].primitiveIndexes.empty()) // compute cost if there exist primitives inside current bin
+        {
+            unionBoxes(updated_box, bins[idx].bounds);
+            added_triangles += bins[idx].primitiveIndexes.size();
+
+            float vol = volume(updated_box);
+
+            float cost = costs[idx].first * costs[idx].second + vol * added_triangles;
+
+            if (costs[idx].first * costs[idx].second <= OFFSET || vol * added_triangles <= OFFSET) // if there are no primitives to the left OR to the right of the bin -> do not perform split
+                continue;
+
+            if (cost < min_val) // both splits are not empty
+            {
+                min_val = cost;
+                split_idx = idx;
+            }
+        }
+    }
+
+    if (split_idx == -1 || min_val == std::numeric_limits<float>::max()) {
+        node.isLeaf = true;
+        return;
+    }
+
+    // We further need to subdivide
+    node.isLeaf = false;
+    m_numLeaves--; // Current node is no longer a leaf
+
+    Node leftChild = Node(true);
+    Node rightChild = Node(true);
+    m_numLeaves += 2; // Children are by default leafs
+
+    // Move the primitives to the children based on the centroids
+    glm::vec3 leftMin = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 leftMax = glm::vec3 { -std::numeric_limits<float>::max() };
+
+    glm::vec3 rightMin = glm::vec3 { std::numeric_limits<float>::max() };
+    glm::vec3 rightMax = glm::vec3 { -std::numeric_limits<float>::max() };
+
+    for (int i = 0; i <= split_idx; i++)
+        for (int j = 0; j < bins[i].primitiveIndexes.size(); ++j) {
+            leftChild.children.push_back(node.children[bins[i].primitiveIndexes[j]]);
+            updateAABB(node.children[bins[i].primitiveIndexes[j]], leftMin, leftMax); // Update the AABB of the left child
+        }
+
+    for (int i = split_idx + 1; i < N_BINS; ++i)
+        for (int j = 0; j < bins[i].primitiveIndexes.size(); ++j) {
+            rightChild.children.push_back(node.children[bins[i].primitiveIndexes[j]]);
+            updateAABB(node.children[bins[i].primitiveIndexes[j]], rightMin, rightMax); // Update the AABB of the left child
+        }
+
+    // Assign AABBs to children nodes
+    leftChild.lower = leftMin;
+    leftChild.upper = leftMax;
+
+    rightChild.lower = rightMin;
+    rightChild.upper = rightMax;
+
+    node.children.clear(); // Remove the children index from the parent
+
+    subdivideNodeSah(leftChild, centroids, depth + 1);
+    node.children.push_back(nodes.size() - 1); // Remember the index of the left child for the parent
+
+    subdivideNodeSah(rightChild, centroids, depth + 1);
+    node.children.push_back(nodes.size() - 1); // Remember the index of the right child for the parent
+
+    nodes.push_back(node);
+}
+
+void BoundingVolumeHierarchy::updateAABB_SAH(const glm::vec3& v, glm::vec3& lower, glm::vec3& upper)
+{
+    lower = glm::min(v, lower);
+    upper = glm::max(v, upper);
+    return;
+}
+
+void BoundingVolumeHierarchy::unionBoxes(AxisAlignedBox& updated_box, const AxisAlignedBox& next_box)
+{
+    updated_box.lower = glm::min(updated_box.lower, glm::min(next_box.lower, next_box.upper));
+    updated_box.upper = glm::max(updated_box.upper, glm::max(next_box.lower, next_box.upper));
+    return;
+}
+
+float BoundingVolumeHierarchy::volume(const AxisAlignedBox& AABB)
+{
+    glm::vec3 diff = AABB.upper - AABB.lower;
+    return (diff.x * diff.y * diff.z);
+}
+
+glm::vec3 BoundingVolumeHierarchy::computeAABB_centroid(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2)
+{
+    glm::vec3 lower = glm::min(v0, glm::min(v1, v2));
+    glm::vec3 upper = glm::max(v0, glm::max(v1, v2));
+    AxisAlignedBox aabb = { lower, upper };
+    return (lower + upper) / glm::vec3 { 2 };
+}
+
 BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& features)
     : m_pScene(pScene)
 {
@@ -189,7 +331,7 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
      *
      * Follows the same ordering as for the flattened list of triangles used in the node struct
      */
-    std::vector<glm::vec3> centroids;
+    std::vector<glm::vec3> centroids {};
 
     Node root = Node(true);
 
@@ -203,9 +345,14 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
             const auto& v1 = mesh.vertices[tri[1]].position;
             const auto& v2 = mesh.vertices[tri[2]].position;
 
-            // Compute centroids
-            glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
-            centroids.push_back(centre);
+            if (features.extra.enableBvhSahBinning) {
+                // Compute centroid computed on AABB centroid instead of triangle's centroid
+                centroids.push_back(computeAABB_centroid(v0, v1, v2));
+            } else {
+                // Compute centroids
+                glm::vec3 centre = (v0 + v1 + v2) / glm::vec3 { 3 };
+                centroids.push_back(centre);
+            }
 
             // Compute root's AABB boundry
             low = glm::min(low, glm::min(v0, glm::min(v1, v2)));
@@ -234,7 +381,10 @@ BoundingVolumeHierarchy::BoundingVolumeHierarchy(Scene* pScene, const Features& 
     root.lower = low;
     root.upper = high;
 
-    subdivideNode(root, centroids, 0, 0);
+    if (features.extra.enableBvhSahBinning)
+        subdivideNodeSah(root, centroids, 0);
+    else
+        subdivideNode(root, centroids, 0, 0);
 }
 
 // Return the depth of the tree that you constructed. This is used to tell the
@@ -265,13 +415,35 @@ void BoundingVolumeHierarchy::showLevel(const Node& node, int currentLevel, int 
     }
 }
 
+void BoundingVolumeHierarchy::showLevelSAH(const Node& node, int currentLevel, int targetLevel)
+{
+    if (currentLevel == targetLevel) {
+
+        if (!node.isLeaf) // make sure that children exist
+        {
+            AxisAlignedBox aabb_left { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
+            AxisAlignedBox aabb_right { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
+
+            drawAABB(aabb_left, DrawMode::Wireframe, glm::vec3 { 0, 1, 0 }, 0.4f);
+            drawAABB(aabb_right, DrawMode::Wireframe, glm::vec3 { 1, 0, 0 }, 0.4f);
+        }
+
+    } else if (!node.isLeaf) {
+        // only recurse on left child for debug purpose
+        showLevelSAH(nodes[node.children[0]], currentLevel + 1, targetLevel);
+    }
+}
+
 // Use this function to visualize your BVH. This is useful for debugging. Use the functions in
 // draw.h to draw the various shapes. We have extended the AABB draw functions to support wireframe
 // mode, arbitrary colors and transparency.
 void BoundingVolumeHierarchy::debugDrawLevel(int level)
 {
-    std::vector<AxisAlignedBox> toDraw;
-    showLevel(nodes[nodes.size() - 1], 0, level);
+
+    if (!drawSAH_Debug) // Classic BVH
+        showLevel(nodes[nodes.size() - 1], 0, level);
+    else // SAH
+        showLevelSAH(nodes[nodes.size() - 1], 0, level);
 }
 
 void BoundingVolumeHierarchy::getLeaf(int index, int& leafIdx, int& result)
@@ -353,6 +525,13 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
         if (rayNodeIntersectionDebug)
             drawSphere(sphere);
 
+        if (features.enableNormalInterp && drawNormalInterpolationDebug) {
+            glm::vec3 p = ray.origin + ray.t * ray.direction;
+
+            drawRay({ p, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 }); // Used normal
+            drawRay({ p, p - sphere.center, 0.4f }, glm::vec3 { 0, 0, 1 }); // Actual normal normal
+        }
+
     } else {
         // Get the triangle from the coresponding mesh
         glm::uvec3 tri = m_pScene->meshes[mesh].triangles[primitiveIndex];
@@ -382,7 +561,7 @@ void BoundingVolumeHierarchy::drawPrimitive(int primitiveIndex, const Ray& ray, 
 /// <param name="ray"> The ray that is to be checked </param>
 /// <param name="aabb"> The AABB which is to be determined if it contains the origin of the ray</param>
 /// <returns> True if the origin of the ray is inside the given AABB, false otherwise</returns>
-bool BoundingVolumeHierarchy::isInAABB(Ray& ray, AxisAlignedBox& aabb) const
+bool BoundingVolumeHierarchy::isInAABB(const Ray& ray, const AxisAlignedBox& aabb) const
 {
     return ((aabb.lower.x <= ray.origin.x && ray.origin.x <= aabb.upper.x) && (aabb.lower.y <= ray.origin.y && ray.origin.y <= aabb.upper.y) && (aabb.lower.z <= ray.origin.z && ray.origin.z <= aabb.upper.z));
 }
@@ -476,6 +655,10 @@ bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo
                     hitInfo.normal = interpolateNormal(v0.normal, v1.normal, v2.normal, hitInfo.barycentricCoord);
 
                     hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+
+                    if (features.enableTextureMapping || features.extra.enableMipmapTextureFiltering) {
+                        hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord);
+                    }
                 } else {
                     glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
@@ -496,8 +679,15 @@ bool BoundingVolumeHierarchy::testPrimitives(const Node& node, Ray& ray, HitInfo
 
     // Return the index of the hit primitive
     if (hit && bestSphereT < bestTriangleT && bestSphereIndex != -1) {
-        if (bestSphereT <= ray.t)
+        if (bestSphereT <= ray.t) {
+            glm::vec3 p = ray.origin + ray.t * ray.direction;
+            hitInfo.normal = glm::normalize(p - bestSphere.center);
+
+            hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+
+            hitInfo.material = bestSphere.material;
             bestPrimitiveIndex = bestSphereIndex;
+        }
     } else if (bestTriangleIndex != -1) {
         if (bestTriangleT <= ray.t)
             bestPrimitiveIndex = bestTriangleIndex;
@@ -561,6 +751,11 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
 
                         hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
 
+                        // Check if textures are turned on
+                        if (features.enableTextureMapping || features.extra.enableMipmapTextureFiltering) {
+                            hitInfo.texCoord = interpolateTexCoord(v0.texCoord, v1.texCoord, v2.texCoord, hitInfo.barycentricCoord); // Calculate texture coordinates
+                        }
+
                     } else {
                         glm::vec3 normal = glm::normalize(glm::cross(v1.position - v0.position, v2.position - v0.position));
 
@@ -598,8 +793,13 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
                 drawRay({ ray.origin + ray.t * ray.direction, interpolateNormal(bestV0.normal, bestV1.normal, bestV2.normal, hitInfo.barycentricCoord), 0.4f }, glm::vec3 { 0, 0, 1 }); // Interpolated normal
             } else {
                 glm::vec3 p = ray.origin + ray.t * ray.direction;
+                hitInfo.normal = glm::normalize(p - bestSphere.center);
 
-                drawRay({ p, p - bestSphere.center, 0.2f }, glm::vec3 { 0, 1, 0 });
+                hitInfo.normal = (glm::dot(ray.direction, hitInfo.normal) > 0) ? -hitInfo.normal : hitInfo.normal;
+                hitInfo.material = bestSphere.material;
+
+                drawRay({ p, hitInfo.normal, 0.2f }, glm::vec3 { 0, 1, 0 }); // Used normal
+                drawRay({ p, p - bestSphere.center, 0.4f }, glm::vec3 { 0, 0, 1 }); // Actual normal normal
             }
         }
 
@@ -615,169 +815,93 @@ bool BoundingVolumeHierarchy::intersect(Ray& ray, HitInfo& hitInfo, const Featur
         };
 
         std::priority_queue<Trav, std::vector<Trav>, decltype(my_comp)> queue(my_comp); // Create priority queue
+        bool hitPrimitive = false;
 
-        float oldT = ray.t;
         AxisAlignedBox rootAABB = { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper };
-        bool hit = intersectRayWithShape(rootAABB, ray);
-
-        hit |= isInAABB(ray, rootAABB);
+        float oldT = ray.t;
 
         int hitIndex = -1;
 
-        if (hit) {
+        if (intersectRayWithShape(rootAABB, ray) || isInAABB(ray, rootAABB)) {
             if (isInAABB(ray, rootAABB))
-                queue.push({ 0, (int)(nodes.size() - 1) });
+                queue.push({ 0, (int)(nodes.size() - 1) }); // Push root to queue with key 0 (matters in case both origin and end are inside root AABB)
             else
                 queue.push({ ray.t, (int)(nodes.size() - 1) }); // Push root to queue
             ray.t = oldT;
 
-            // For debug draw root's AABB if intersected
-            if (rayNodeIntersectionDebug)
-                drawAABB(AxisAlignedBox { nodes[nodes.size() - 1].lower, nodes[nodes.size() - 1].upper }, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-
-            std::vector<int> unvisited;
-
+            // Go through the tree until no better options are available
             while (queue.size() > 0) {
-                Trav current = queue.top();
+                const Trav current = queue.top();
                 queue.pop();
-
                 const Node& node = nodes[current.NodeIndex];
 
-                // If node is leaf test its primitives, otherwise test its children
-                if (node.isLeaf) {
+                // Draw the AABBs that the ray intersects
+                if (rayNodeIntersectionDebug)
+                    drawAABB(AxisAlignedBox { node.lower, node.upper }, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
 
-                    if (testPrimitives(node, ray, hitInfo, features, hitIndex)) {
+                // The current node has potential for a better intersection
+                if (current.t <= ray.t) {
 
-                        // If we can find AABBs with an equal or smaller t we try to intersect with them as well
-                        while (queue.size() > 0) {
-                            Trav other = queue.top();
-                            queue.pop();
+                    if (node.isLeaf) {
+                        hitPrimitive |= testPrimitives(node, ray, hitInfo, features, hitIndex);
+                    } else {
 
-                            // The current AABB has potentian for a better hit
-                            if (other.t <= ray.t) {
-                                const Node& otherNode = nodes[other.NodeIndex];
+                        // Node has left child
+                        if (node.children.size() > 0) {
+                            const AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
+                            oldT = ray.t;
 
-                                if (otherNode.isLeaf) {
-                                    // If the node is a leaf then test its intersection
-                                    testPrimitives(otherNode, ray, hitInfo, features, hitIndex);
-                                } else {
-                                    AxisAlignedBox leftChildBox = { nodes[otherNode.children[0]].lower, nodes[otherNode.children[0]].upper };
-                                    oldT = ray.t;
+                            if (isInAABB(ray, leftChildBox)) {
 
-                                    // If ray intersects AABB put into queue
-                                    Trav leftChild;
-                                    if (isInAABB(ray, leftChildBox)) {
-                                        leftChild = { 0, otherNode.children[0] };
-                                        queue.push(leftChild);
+                                queue.push({ 0, node.children[0] }); // Insert the node as a primitive can be intersected at any time
 
-                                        // For debug draw intersected node's AABB
-                                        if (rayNodeIntersectionDebug)
-                                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-                                    } else if (intersectRayWithShape(leftChildBox, ray)) {
-                                        leftChild = { ray.t, otherNode.children[0] };
-                                        ray.t = oldT; // No need to remember the AABB intersection t
+                            } else if (intersectRayWithShape(leftChildBox, ray)) {
 
-                                        // For debug draw intersected node's AABB
-                                        if (rayNodeIntersectionDebug)
-                                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
+                                // Insert into queue only if the node has potential for a better intersection
+                                if (ray.t <= oldT)
+                                    queue.push({ ray.t, node.children[0] });
 
-                                        if (leftChild.t <= ray.t)
-                                            queue.push(leftChild);
-                                    }
-
-                                    AxisAlignedBox rightChildBox = { nodes[otherNode.children[1]].lower, nodes[otherNode.children[1]].upper };
-                                    oldT = ray.t;
-
-                                    Trav rightChild;
-                                    if (isInAABB(ray, rightChildBox)) {
-                                        rightChild = { 0, otherNode.children[1] };
-                                        queue.push(rightChild);
-
-                                        // For debug draw intersected node's AABB
-                                        if (rayNodeIntersectionDebug)
-                                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-                                    } else if (intersectRayWithShape(rightChildBox, ray)) {
-                                        rightChild = { ray.t, otherNode.children[1] };
-                                        ray.t = oldT;
-
-                                        if (rayNodeIntersectionDebug)
-                                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-
-                                        if (rightChild.t <= ray.t)
-                                            queue.push(rightChild);
-                                    }
-                                }
-                            } else {
-                                /*
-                                 * The node has been intersected but since it's farther than the current best
-                                 * primitive intersection we have no reason to visit it.
-                                 */
-
-                                unvisited.push_back(other.NodeIndex);
+                                // Reset the old intersection value
+                                ray.t = oldT;
                             }
                         }
 
-                        // Draw debug features for the hit primitive
-                        if (rayNodeIntersectionDebug || drawNormalInterpolationDebug)
-                            drawPrimitive(hitIndex, ray, features, hitInfo);
+                        // Node has right child
+                        if (node.children.size() > 1) {
+                            const AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
+                            oldT = ray.t;
 
-                        if (drawUnvisited) {
-                            for (const auto unvisitedIndex : unvisited)
-                                drawAABB({ nodes[unvisitedIndex].lower, nodes[unvisitedIndex].upper }, DrawMode::Wireframe, glm::vec3 { 1.0f, 0.45f, 0.1f }, 0.4f);
+                            if (isInAABB(ray, rightChildBox)) {
+
+                                queue.push({ 0, node.children[1] }); // Insert the node as a primitive can be intersected at any time
+
+                            } else if (intersectRayWithShape(rightChildBox, ray)) {
+
+                                // Insert into queue only if the node has potential for a better intersection
+                                if (ray.t <= oldT)
+                                    queue.push({ ray.t, node.children[1] });
+
+                                // Reset the old intersection value
+                                ray.t = oldT;
+                            }
                         }
-
-                        return true;
                     }
+
                 } else {
-                    AxisAlignedBox leftChildBox = { nodes[node.children[0]].lower, nodes[node.children[0]].upper };
-                    oldT = ray.t;
-
-                    // If ray intersects AABB put into queue
-                    Trav leftChild;
-                    if (isInAABB(ray, leftChildBox)) {
-                        leftChild = { 0, node.children[0] };
-                        queue.push(leftChild);
-
-                        // For debug draw intersected node's AABB
-                        if (rayNodeIntersectionDebug)
-                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-                    } else if (intersectRayWithShape(leftChildBox, ray)) {
-                        leftChild = { ray.t, node.children[0] };
-                        ray.t = oldT; // No need to remember the AABB intersection t
-
-                        // For debug draw intersected node's AABB
-                        if (rayNodeIntersectionDebug)
-                            drawAABB(leftChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-
-                        if (leftChild.t <= ray.t)
-                            queue.push(leftChild);
-                    }
-
-                    AxisAlignedBox rightChildBox = { nodes[node.children[1]].lower, nodes[node.children[1]].upper };
-                    oldT = ray.t;
-
-                    Trav rightChild;
-                    if (isInAABB(ray, rightChildBox)) {
-                        rightChild = { 0, node.children[1] };
-                        queue.push(rightChild);
-
-                        // For debug draw intersected node's AABB
-                        if (rayNodeIntersectionDebug)
-                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-                    } else if (intersectRayWithShape(rightChildBox, ray)) {
-                        rightChild = { ray.t, node.children[1] };
-                        ray.t = oldT;
-
-                        if (rayNodeIntersectionDebug)
-                            drawAABB(rightChildBox, DrawMode::Wireframe, glm::vec3 { 1 }, 0.4f);
-
-                        if (rightChild.t <= ray.t)
-                            queue.push(rightChild);
-                    }
+                    /*
+                     * The node has been intersected but since it's farther than the current best
+                     * primitive intersection we have no reason to visit it.
+                     */
+                    if (drawUnvisited)
+                        drawAABB({ node.lower, node.upper }, DrawMode::Wireframe, glm::vec3 { 1.0f, 0.45f, 0.1f }, 0.4f);
                 }
             }
+
+            // Draw debug features for the hit primitive
+            if (hitPrimitive && (rayNodeIntersectionDebug || drawNormalInterpolationDebug))
+                drawPrimitive(hitIndex, ray, features, hitInfo);
         }
 
-        return false;
+        return hitPrimitive;
     }
 }
