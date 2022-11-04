@@ -317,7 +317,7 @@ glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, c
 }
 
 // Convert the given channel (R, G, or B) to a linear value (between 0 and 1)
-// Needed for the relative luminosity formula -> used in bloomFilter()
+// Needed for the relative luminance formula -> used in bloomFilter()
 // Reference used: https://en.wikipedia.org/wiki/SRGB
 float toLinearRGB(float channelValue)
 {
