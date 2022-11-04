@@ -316,6 +316,22 @@ glm::vec3 pixelColorDOF(const Scene& scene, const BvhInterface& bvh, Ray& ray, c
     return color;
 }
 
+// Convert the given channel (R, G, or B) to a linear value (between 0 and 1)
+// Needed for the relative luminosity formula -> used in bloomFilter()
+// Reference used: https://en.wikipedia.org/wiki/SRGB
+float toLinearRGB(float channelValue)
+{
+    if (channelValue > 0.04045f) {
+
+        return powf(((channelValue + 0.055f) / 1.055f), 2.4f);
+
+    } else {
+
+        return channelValue / 12.92f;
+
+    }
+}
+
 // Apply box filter (as shown in the slides for lecture 2 of the course)
 glm::vec3 boxFilter(std::vector<std::vector<glm::vec3>>& pixelGrid, int x, int y, int givenFilterSize)
 {
@@ -341,12 +357,15 @@ void bloomFilter(glm::ivec2& resolution, std::vector<std::vector<glm::vec3>>& pi
 
             glm::vec3 originalColor = pixelGrid[x + givenFilterSize][y + givenFilterSize];
 
+            // Convert the current RGB values to linear values (between 0 and 1)
+            glm::vec3 convertedToLinear = glm::vec3(toLinearRGB(originalColor.x), toLinearRGB(originalColor.y), toLinearRGB(originalColor.z));
+
             // Calculating the relative luminance of the current RGB values
             // Reference used: https://en.wikipedia.org/wiki/Relative_luminance
-            float valueToCheck = glm::dot(originalColor, glm::vec3(0.2126f, 0.7152f, 0.0722f));
+            float valueToCheck = glm::dot(convertedToLinear, glm::vec3(0.2126f, 0.7152f, 0.0722f));
 
             if (valueToCheck > givenThreshold) {
-                
+
                 // If the relative luminance meets the threshold, keep the original color
                 continue;
 
