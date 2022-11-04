@@ -13,8 +13,8 @@ void debugDrawMipMapLevel(int level, const Ray& ray) {
 
         glm::vec3 RED {1.0f, 0.0f, 0.0f}; 
         glm::vec3 GREEN {0.0f, 1.0f, 0.0f}; 
-        drawSphereCustom(2 * level, RED, ray); 
-        drawSphereCustom(2 * (level + 1), GREEN, ray); 
+        drawSphereCustom(pow(2, level), RED, ray);
+        drawSphereCustom(pow(2, (level + 1)), GREEN, ray);
 
 } 
 

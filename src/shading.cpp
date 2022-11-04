@@ -60,10 +60,14 @@ const glm::vec3 computeDiffuse(const glm::vec3& lightPosition, const glm::vec3& 
     glm::vec3 surfaceLightVector = glm::normalize(lightPosition - postion);
     float dotProduct = std::max(0.0f, glm::dot(surfaceLightVector, hitInfo.normal));
 
-    if (features.extra.enableMipmapTextureFiltering && hitInfo.material.kdTexture){
+    if (features.enableTextureMapping && features.extra.enableMipmapTextureFiltering && hitInfo.material.kdTexture){
 
             Image& img = *hitInfo.material.kdTexture;
-            int level = log2(ray.t);
+             int level;
+             if (ray.t <= 1.0f) // avoid log2 from 0
+                 level = 0;
+             else
+                 level = log2(ray.t);
 
             mipmap_max_depth = std::log2(img.height);
 
@@ -158,12 +162,19 @@ const glm::vec3 computeShading(const glm::vec3& lightPosition, const glm::vec3& 
              if (features.extra.enableMipmapTextureFiltering) {
 
              Image& img = *hitInfo.material.kdTexture;
-             int level = log2(ray.t);
+             int level;
+             if (ray.t <= 1.0f) // avoid log2 from 0
+                 level = 0;
+             else
+                 level = log2(ray.t);
 
              mipmap_max_depth = std::log2(img.height);
 
             if (map.find(img) == map.end())
                 map[img] = createImages(img);
+
+             if (level > mipmap_max_depth)
+                level = mipmap_max_depth;
 
              float alpha;
              if (level == mipmap_max_depth)
