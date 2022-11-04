@@ -125,6 +125,17 @@ int main(int argc, char** argv)
                     scene = loadScenePrebuilt(sceneType, config.dataPath);
                     selectedLightIdx = scene.lights.empty() ? -1 : 0;
 
+                    // Count the number of primitives in a scene
+                    int primitivesCount = 0;
+                    for (const auto& mesh : scene.meshes) {
+                        primitivesCount += static_cast<int>(mesh.triangles.size());
+                    }
+
+                    primitivesCount += static_cast<int>(scene.spheres.size());
+                    std::cout << std::endl;
+                    std::cout << "-----------------Construction info-----------------------" << std::endl;
+                    std::cout << "Num primitives " << primitivesCount << std::endl;
+
                     using clock = std::chrono::high_resolution_clock;
                     const auto start = clock::now();
 
@@ -137,6 +148,9 @@ int main(int argc, char** argv)
                         HitInfo dummy {};
                         bvh.intersect(*optDebugRay, dummy, config.features);
                     }
+
+                    std::cout << "BVH levels " << bvh.numLevels() << std::endl;
+                    std::cout << "---------------------------------------------------------" << std::endl;
                 }
             }
             {
